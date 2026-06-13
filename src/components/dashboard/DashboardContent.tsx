@@ -1,0 +1,361 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { format } from "date-fns";
+import { Sparkles, Flame, Target, Sun, TrendingUp, Plus, RefreshCw } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { MoodTracker } from "./MoodTracker";
+import { HabitList } from "./HabitList";
+import { TaskQuickAdd } from "./TaskQuickAdd";
+import { AIAssistantCard } from "./AIAssistantCard";
+import { DailyAffirmation } from "./DailyAffirmation";
+import { CycleWidget } from "./CycleWidget";
+import type { Task, Habit, Mood, Profile, Subscription, WeeklyPlan } from "@/types";
+import { TASK_CATEGORY_CONFIG, MOOD_EMOJIS } from "@/types";
+import { cn, getCompletionRate, formatDate } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
+
+interface DashboardContentProps {
+  tasks: Task[];
+  habits: Array<Habit & { completedToday: boolean }>;
+  mood: Mood | null;
+  profile: Profile | null;
+  subscription: Subscription | null;
+  weeklyPlan: WeeklyPlan | null;
+}
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.08 } },
+};
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
+};
+
+export function DashboardContent({
+  tasks: initialTasks,
+  habits: initialHabits,
+  mood: initialMood,
+  profile,
+  subscription,
+  weeklyPlan,
+}: DashboardContentProps) {
+  const [tasks, setTasks] = useState(initialTasks);
+  const [habits, setHabits] = useState(initialHabits);
+  const [mood, setMood] = useState(initialMood);
+  const supabase = createClient();
+  const today = new Date();
+  const todayStr = format(today, "yyyy-MM-dd");
+
+  const mustDoTasks = tasks.filter((t) => t.category === "must_do");
+  const completionRate = getCompletionRate([
+    ...tasks,
+    ...tasks.filter((t) => t.status === "done"),
+  ]);
+  const habitCompletionRate = habits.length
+    ? Math.round((habits.filter((h) => h.completedToday).length / habits.length) * 100)
+    : 0;
+  const streakDays = Math.max(...habits.map((h) => h.streak_current), 0);
+
+  async function completeTask(taskId: string) {
+    const { error } = await supabase
+      .from("tasks")
+      .update({ status: "done", completed_at: new Date().toISOString() })
+      .eq("id", taskId);
+
+    if (!error) {
+      setTasks((prev) => prev.map((t) => t.id === taskId ? { ...t, status: "done" as const } : t));
+      toast.success("Task done! 🎉 You're doing great.");
+    }
+  }
+
+  async function toggleHabit(habitId: string, completed: boolean) {
+    if (completed) {
+      // Remove completion
+      await supabase
+        .from("habit_completions")
+        .delete()
+        .eq("habit_id", habitId)
+        .eq("completed_date", todayStr);
+      setHabits((prev) =>
+        prev.map((h) => h.id === habitId ? { ...h, completedToday: false } : h)
+      );
+    } else {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      await supabase.from("habit_completions").upsert({
+        habit_id: habitId,
+        user_id: user.id,
+        completed_date: todayStr,
+      });
+      setHabits((prev) =>
+        prev.map((h) => h.id === habitId ? { ...h, completedToday: true } : h)
+      );
+      toast.success("Habit logged! ✨ Keep it up!");
+    }
+  }
+
+  return (
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-6"
+    >
+      {/* Header row */}
+      <motion.div variants={cardVariants} className="flex items-start justify-between">
+        <div>
+          <h1 className="font-display text-2xl font-bold">
+            {format(today, "EEEE, MMMM d")} 🌸
+          </h1>
+          {weeklyPlan?.intention && (
+            <p className="text-sm text-muted-foreground mt-1 italic">
+              This week: &ldquo;{weeklyPlan.intention}&rdquo;
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {subscription?.plan === "free" && (
+            <Badge variant="soft" className="hidden sm:flex">Free plan</Badge>
+          )}
+          <Button variant="soft" size="sm" className="gap-1.5">
+            <RefreshCw className="h-3.5 w-3.5" />
+            Soft Reset
+          </Button>
+        </div>
+      </motion.div>
+
+      {/* Daily Affirmation */}
+      <motion.div variants={cardVariants}>
+        <DailyAffirmation mood={mood} profile={profile} />
+      </motion.div>
+
+      {/* Stats row */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {[
+          {
+            label: "Tasks done",
+            value: `${tasks.filter((t) => t.status === "done").length}/${tasks.length}`,
+            icon: Target,
+            gradient: "from-rose-400 to-pink-500",
+            bg: "from-rose-50 to-pink-50 dark:from-rose-950/30",
+          },
+          {
+            label: "Habits today",
+            value: `${habits.filter((h) => h.completedToday).length}/${habits.length}`,
+            icon: Sun,
+            gradient: "from-amber-400 to-orange-400",
+            bg: "from-amber-50 to-orange-50 dark:from-amber-950/30",
+          },
+          {
+            label: "Day streak",
+            value: streakDays > 0 ? `${streakDays}🔥` : "Start one!",
+            icon: Flame,
+            gradient: "from-orange-400 to-red-400",
+            bg: "from-orange-50 to-red-50 dark:from-orange-950/30",
+          },
+          {
+            label: "Habit rate",
+            value: `${habitCompletionRate}%`,
+            icon: TrendingUp,
+            gradient: "from-emerald-400 to-teal-500",
+            bg: "from-emerald-50 to-teal-50 dark:from-emerald-950/30",
+          },
+        ].map((stat, i) => (
+          <motion.div key={stat.label} variants={cardVariants}>
+            <div className={cn(
+              "rounded-2xl bg-gradient-to-br border border-border/40 p-4",
+              stat.bg
+            )}>
+              <div className={cn(
+                "mb-2 inline-flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br",
+                stat.gradient
+              )}>
+                <stat.icon className="h-4 w-4 text-white" />
+              </div>
+              <p className="text-2xl font-bold">{stat.value}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Main content grid */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Tasks column (2/3 width) */}
+        <div className="space-y-6 lg:col-span-2">
+          {/* Today's focus */}
+          <motion.div variants={cardVariants}>
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    🎯 Today's Focus
+                    <Badge variant="soft" className="text-xs font-normal">
+                      {mustDoTasks.length} must-do{mustDoTasks.length !== 1 ? "s" : ""}
+                    </Badge>
+                  </CardTitle>
+                  <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs">
+                    <Plus className="h-3.5 w-3.5" />
+                    Add task
+                  </Button>
+                </div>
+                {tasks.length > 0 && (
+                  <div className="mt-2">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                      <span>{tasks.filter((t) => t.status === "done").length} of {tasks.length} done</span>
+                      <span>{completionRate}%</span>
+                    </div>
+                    <Progress value={completionRate} className="h-1.5" />
+                  </div>
+                )}
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {tasks.length === 0 ? (
+                  <div className="empty-state py-8">
+                    <p className="text-3xl mb-2">🌿</p>
+                    <p className="text-sm font-medium">Nothing planned yet</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Add a task or let AI plan your day
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Group by category */}
+                    {(["must_do", "should_do", "if_energy"] as const).map((cat) => {
+                      const catTasks = tasks.filter((t) => t.category === cat);
+                      if (!catTasks.length) return null;
+                      const config = TASK_CATEGORY_CONFIG[cat];
+                      return (
+                        <div key={cat} className="space-y-1.5">
+                          <p className={cn("text-xs font-semibold uppercase tracking-wider", config.color)}>
+                            {config.emoji} {config.label}
+                          </p>
+                          {catTasks.map((task) => (
+                            <TaskItem
+                              key={task.id}
+                              task={task}
+                              onComplete={() => completeTask(task.id)}
+                            />
+                          ))}
+                        </div>
+                      );
+                    })}
+                  </>
+                )}
+                <TaskQuickAdd userId={profile?.id ?? ""} onAdded={(task) => setTasks((p) => [...p, task])} />
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* AI Assistant */}
+          <motion.div variants={cardVariants}>
+            <AIAssistantCard profile={profile} tasks={tasks} mood={mood} />
+          </motion.div>
+        </div>
+
+        {/* Right column */}
+        <div className="space-y-6">
+          {/* Mood tracker */}
+          <motion.div variants={cardVariants}>
+            <MoodTracker
+              mood={mood}
+              onMoodSaved={(newMood) => setMood(newMood)}
+              userId={profile?.id ?? ""}
+            />
+          </motion.div>
+
+          {/* Habits */}
+          <motion.div variants={cardVariants}>
+            <HabitList
+              habits={habits}
+              onToggle={toggleHabit}
+              subscription={subscription}
+            />
+          </motion.div>
+
+          {/* Cycle widget */}
+          {profile?.id && (
+            <motion.div variants={cardVariants}>
+              <CycleWidget userId={profile.id} />
+            </motion.div>
+          )}
+
+          {/* Weekly plan preview */}
+          {weeklyPlan && (
+            <motion.div variants={cardVariants}>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">📅 This Week</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {weeklyPlan.theme && (
+                    <p className="text-xs text-muted-foreground">Theme: <span className="font-medium text-foreground">{weeklyPlan.theme}</span></p>
+                  )}
+                  {weeklyPlan.big_three?.map((goal, i) => (
+                    <div key={i} className="flex items-center gap-2 text-sm">
+                      <span className="text-primary">✦</span>
+                      <span>{goal}</span>
+                    </div>
+                  ))}
+                  {!weeklyPlan.big_three?.length && (
+                    <p className="text-xs text-muted-foreground italic">No weekly goals set yet</p>
+                  )}
+                  <Button variant="ghost" size="sm" className="w-full mt-2 text-xs" asChild>
+                    <a href="/planner">View full week →</a>
+                  </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function TaskItem({ task, onComplete }: { task: Task; onComplete: () => void }) {
+  const isDone = task.status === "done";
+
+  return (
+    <div className={cn(
+      "flex items-center gap-3 rounded-xl p-3 transition-all group",
+      isDone ? "opacity-50" : "hover:bg-muted/50"
+    )}>
+      <button
+        onClick={onComplete}
+        disabled={isDone}
+        className={cn(
+          "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all",
+          isDone
+            ? "border-primary bg-primary"
+            : "border-muted-foreground/30 hover:border-primary group-hover:border-primary/50"
+        )}
+        aria-label={isDone ? "Completed" : "Mark complete"}
+      >
+        {isDone && (
+          <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 8 8" fill="none">
+            <path d="M1.5 4L3 5.5L6.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+      </button>
+      <div className="flex-1 min-w-0">
+        <p className={cn("text-sm font-medium truncate", isDone && "line-through text-muted-foreground")}>
+          {task.emoji} {task.title}
+        </p>
+        {task.estimated_minutes && (
+          <p className="text-xs text-muted-foreground">
+            ~{task.estimated_minutes} min
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}

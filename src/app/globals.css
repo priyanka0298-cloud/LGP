@@ -1,0 +1,252 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Core palette — Light Mode */
+    --background: 0 0% 99%;
+    --foreground: 20 14% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 20 14% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 14% 12%;
+    --primary: 340 82% 60%;       /* rose-500 #f43f6e */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 263 80% 88%;     /* lavender-200 */
+    --secondary-foreground: 263 50% 30%;
+    --muted: 30 10% 95%;
+    --muted-foreground: 30 8% 50%;
+    --accent: 30 100% 92%;        /* peach */
+    --accent-foreground: 30 50% 30%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 30 10% 90%;
+    --input: 30 10% 90%;
+    --ring: 340 82% 60%;
+    --radius: 0.75rem;
+
+    /* Brand colors */
+    --color-rose: 340 82% 60%;
+    --color-lavender: 263 80% 72%;
+    --color-peach: 30 100% 75%;
+    --color-sage: 142 50% 68%;
+    --color-sky: 200 80% 70%;
+
+    /* Soft gradient backgrounds */
+    --gradient-soft: linear-gradient(135deg, #fff1f5 0%, #fdf4ff 50%, #f0f9ff 100%);
+    --gradient-card: linear-gradient(135deg, #ffffff 0%, #fef9ff 100%);
+    --gradient-hero: linear-gradient(135deg, #fce7f3 0%, #f3e8ff 50%, #e0f2fe 100%);
+  }
+
+  /* ── Accent color overrides ── */
+  /* rose is the default — no override needed */
+  [data-accent="lavender"] { --primary: 263 75% 62%; --ring: 263 75% 62%; }
+  [data-accent="peach"]    { --primary: 25 85% 58%;  --ring: 25 85% 58%;  }
+  [data-accent="sage"]     { --primary: 142 45% 48%; --ring: 142 45% 48%; }
+  [data-accent="sky"]      { --primary: 200 75% 50%; --ring: 200 75% 50%; }
+
+  .dark[data-accent="lavender"] { --primary: 263 75% 68%; --ring: 263 75% 68%; }
+  .dark[data-accent="peach"]    { --primary: 25 85% 63%;  --ring: 25 85% 63%;  }
+  .dark[data-accent="sage"]     { --primary: 142 45% 55%; --ring: 142 45% 55%; }
+  .dark[data-accent="sky"]      { --primary: 200 75% 58%; --ring: 200 75% 58%; }
+
+  .dark {
+    --background: 20 14% 8%;
+    --foreground: 30 10% 95%;
+    --card: 20 14% 11%;
+    --card-foreground: 30 10% 95%;
+    --popover: 20 14% 11%;
+    --popover-foreground: 30 10% 95%;
+    --primary: 340 82% 65%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 263 30% 25%;
+    --secondary-foreground: 263 60% 90%;
+    --muted: 20 10% 18%;
+    --muted-foreground: 30 8% 60%;
+    --accent: 30 40% 20%;
+    --accent-foreground: 30 80% 90%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 20 10% 20%;
+    --input: 20 10% 20%;
+    --ring: 340 82% 65%;
+
+    --gradient-soft: linear-gradient(135deg, #1a0a10 0%, #12080f 50%, #080d14 100%);
+    --gradient-card: linear-gradient(135deg, #1a1118 0%, #160f1a 100%);
+    --gradient-hero: linear-gradient(135deg, #2d0a1a 0%, #1a0a2e 50%, #051520 100%);
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  h1, h2, h3 {
+    @apply font-display;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-muted-foreground/30;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/50;
+  }
+
+  /* Focus visible */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Selection */
+  ::selection {
+    @apply bg-primary/20 text-foreground;
+  }
+}
+
+@layer components {
+  /* Soft card style */
+  .card-soft {
+    @apply bg-card rounded-2xl border border-border/50 shadow-soft;
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-rose-500 via-purple-500 to-pink-400 bg-clip-text text-transparent;
+  }
+
+  /* Shimmer loading */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 25%,
+      hsl(var(--muted-foreground) / 0.1) 50%,
+      hsl(var(--muted)) 75%
+    );
+    background-size: 200% 100%;
+    @apply animate-shimmer;
+  }
+
+  /* Soft badge */
+  .badge-soft {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  /* Habit card */
+  .habit-card {
+    @apply relative overflow-hidden rounded-2xl border border-border/50 bg-card p-4 transition-all duration-200 hover:shadow-soft;
+  }
+
+  /* Floating label input */
+  .input-float {
+    @apply relative;
+  }
+
+  /* Category pill */
+  .category-must {
+    @apply bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-900/30;
+  }
+  .category-should {
+    @apply bg-purple-50 text-purple-600 border-purple-100 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-900/30;
+  }
+  .category-energy {
+    @apply bg-sky-50 text-sky-600 border-sky-100 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-900/30;
+  }
+  .category-someday {
+    @apply bg-green-50 text-green-600 border-green-100 dark:bg-green-950/30 dark:text-green-400 dark:border-green-900/30;
+  }
+
+  /* Mood button */
+  .mood-btn {
+    @apply h-10 w-10 rounded-full text-xl transition-all duration-200 hover:scale-110 focus:scale-110;
+  }
+
+  /* Section header */
+  .section-header {
+    @apply flex items-center justify-between mb-4;
+  }
+
+  /* Empty state */
+  .empty-state {
+    @apply flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border/50 p-12 text-center;
+  }
+}
+
+@layer utilities {
+  /* Hide scrollbar but keep functionality */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Glass effect */
+  .glass {
+    @apply backdrop-blur-md bg-background/80 border border-border/30;
+  }
+
+  /* Gradient backgrounds */
+  .bg-gradient-soft {
+    background: var(--gradient-soft);
+  }
+  .bg-gradient-hero {
+    background: var(--gradient-hero);
+  }
+
+  /* Text balance */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Safe area padding for mobile */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* Framer Motion reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  body {
+    background: white;
+    color: black;
+  }
+}

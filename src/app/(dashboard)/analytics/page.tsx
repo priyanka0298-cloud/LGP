@@ -20,7 +20,7 @@ export default async function AnalyticsPage() {
   ] = await Promise.all([
     supabase
       .from("moods")
-      .select("date, mood_score, energy_level, mood_label")
+      .select("date, mood_score, energy_level, mood_label, note")
       .eq("user_id", user.id)
       .gte("date", thirtyDaysAgo)
       .order("date"),

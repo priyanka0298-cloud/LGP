@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -103,11 +102,7 @@ export function MoodTracker({ mood, userId, onMoodSaved }: MoodTrackerProps) {
                   aria-pressed={selectedMood === s}
                 >
                   {selectedMood === s && (
-                    <motion.div
-                      layoutId="mood-selected"
-                      className="absolute inset-0 rounded-full bg-primary/10 ring-2 ring-primary"
-                      transition={{ type: "spring", duration: 0.3 }}
-                    />
+                    <div className="absolute inset-0 rounded-full bg-primary/10 ring-2 ring-primary" />
                   )}
                   <span className="relative">{emoji}</span>
                 </button>
@@ -152,24 +147,14 @@ export function MoodTracker({ mood, userId, onMoodSaved }: MoodTrackerProps) {
           >
             {showNote ? "− Hide" : "+ Add"} a note (optional)
           </button>
-          <AnimatePresence>
-            {showNote && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden"
-              >
-                <Textarea
-                  className="mt-2 text-xs min-h-[60px]"
-                  placeholder="What's on your mind? No judgment here 🌸"
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {showNote && (
+            <Textarea
+              className="mt-2 text-xs min-h-[60px]"
+              placeholder="What's on your mind? No judgment here 🌸"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+            />
+          )}
         </div>
 
         <Button

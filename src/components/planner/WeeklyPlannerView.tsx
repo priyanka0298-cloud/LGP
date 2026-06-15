@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { motion } from "framer-motion";
 import { format, addWeeks, subWeeks, isToday } from "date-fns";
 import { ChevronLeft, ChevronRight, Sparkles, Plus, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";

@@ -13,11 +13,13 @@ import { TaskQuickAdd } from "./TaskQuickAdd";
 import { AIAssistantCard } from "./AIAssistantCard";
 import { DailyAffirmation } from "./DailyAffirmation";
 import { CycleWidget } from "./CycleWidget";
+import { FoodLogCard } from "./FoodLogCard";
 import type { Task, Habit, Mood, Profile, Subscription, WeeklyPlan } from "@/types";
 import { TASK_CATEGORY_CONFIG, MOOD_EMOJIS } from "@/types";
-import { cn, getCompletionRate, formatDate } from "@/lib/utils";
+import { cn, getCompletionRate } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 interface DashboardContentProps {
   tasks: Task[];
@@ -28,6 +30,7 @@ interface DashboardContentProps {
   weeklyPlan: WeeklyPlan | null;
 }
 
+type ContextFilter = "all" | "work" | "personal";
 
 export function DashboardContent({
   tasks: initialTasks,
@@ -40,15 +43,25 @@ export function DashboardContent({
   const [tasks, setTasks] = useState(initialTasks);
   const [habits, setHabits] = useState(initialHabits);
   const [mood, setMood] = useState(initialMood);
+  const [contextFilter, setContextFilter] = useState<ContextFilter>("all");
   const supabase = createClient();
+  const router = useRouter();
   const today = new Date();
   const todayStr = format(today, "yyyy-MM-dd");
 
-  const mustDoTasks = tasks.filter((t) => t.category === "must_do");
-  const completionRate = getCompletionRate([
-    ...tasks,
-    ...tasks.filter((t) => t.status === "done"),
-  ]);
+  function getFilteredTasks() {
+    if (contextFilter === "all") return tasks;
+    return tasks.filter((t) => {
+      const tags = (t.tags as string[] | null) ?? [];
+      return tags.includes(contextFilter);
+    });
+  }
+
+  const filteredTasks = getFilteredTasks();
+  const mustDoTasks = filteredTasks.filter((t) => t.category === "must_do");
+  const completionRate = tasks.length
+    ? Math.round((tasks.filter((t) => t.status === "done").length / tasks.length) * 100)
+    : 0;
   const habitCompletionRate = habits.length
     ? Math.round((habits.filter((h) => h.completedToday).length / habits.length) * 100)
     : 0;
@@ -63,28 +76,52 @@ export function DashboardContent({
     if (!error) {
       setTasks((prev) => prev.map((t) => t.id === taskId ? { ...t, status: "done" as const } : t));
       toast.success("Task done! 🎉 You're doing great.");
+      router.refresh();
     }
   }
 
   async function toggleHabit(habitId: string, completed: boolean) {
     if (completed) {
-      // Remove completion
-      await supabase
+      const { error } = await supabase
         .from("habit_completions")
         .delete()
         .eq("habit_id", habitId)
+        .eq("user_id", profile?.id ?? "")
         .eq("completed_date", todayStr);
+
+      if (error) {
+        toast.error("Couldn't update habit. Try again?");
+        return;
+      }
       setHabits((prev) =>
         prev.map((h) => h.id === habitId ? { ...h, completedToday: false } : h)
       );
     } else {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      await supabase.from("habit_completions").upsert({
-        habit_id: habitId,
-        user_id: user.id,
-        completed_date: todayStr,
-      });
+      const userId = profile?.id;
+      if (!userId) return;
+
+      // Check first to avoid duplicate insert
+      const { data: existing } = await supabase
+        .from("habit_completions")
+        .select("id")
+        .eq("habit_id", habitId)
+        .eq("user_id", userId)
+        .eq("completed_date", todayStr)
+        .maybeSingle();
+
+      if (!existing) {
+        const { error } = await supabase.from("habit_completions").insert({
+          habit_id: habitId,
+          user_id: userId,
+          completed_date: todayStr,
+        });
+
+        if (error) {
+          toast.error("Couldn't log habit. Try again?");
+          return;
+        }
+      }
+
       setHabits((prev) =>
         prev.map((h) => h.id === habitId ? { ...h, completedToday: true } : h)
       );
@@ -118,9 +155,7 @@ export function DashboardContent({
       </div>
 
       {/* Daily Affirmation */}
-      <div>
-        <DailyAffirmation mood={mood} profile={profile} />
-      </div>
+      <DailyAffirmation mood={mood} profile={profile} />
 
       {/* Stats row */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -153,21 +188,19 @@ export function DashboardContent({
             gradient: "from-emerald-400 to-teal-500",
             bg: "from-emerald-50 to-teal-50 dark:from-emerald-950/30",
           },
-        ].map((stat, i) => (
-          <div key={stat.label}>
+        ].map((stat) => (
+          <div key={stat.label} className={cn(
+            "rounded-2xl bg-gradient-to-br border border-border/40 p-4",
+            stat.bg
+          )}>
             <div className={cn(
-              "rounded-2xl bg-gradient-to-br border border-border/40 p-4",
-              stat.bg
+              "mb-2 inline-flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br",
+              stat.gradient
             )}>
-              <div className={cn(
-                "mb-2 inline-flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br",
-                stat.gradient
-              )}>
-                <stat.icon className="h-4 w-4 text-white" />
-              </div>
-              <p className="text-2xl font-bold">{stat.value}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
+              <stat.icon className="h-4 w-4 text-white" />
             </div>
+            <p className="text-2xl font-bold">{stat.value}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
           </div>
         ))}
       </div>
@@ -176,131 +209,136 @@ export function DashboardContent({
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Tasks column (2/3 width) */}
         <div className="space-y-6 lg:col-span-2">
-          {/* Today's focus */}
-          <div>
-            <Card>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    🎯 Today's Focus
-                    <Badge variant="soft" className="text-xs font-normal">
-                      {mustDoTasks.length} must-do{mustDoTasks.length !== 1 ? "s" : ""}
-                    </Badge>
-                  </CardTitle>
-                  <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs">
-                    <Plus className="h-3.5 w-3.5" />
-                    Add task
-                  </Button>
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  🎯 Today&apos;s Focus
+                  <Badge variant="soft" className="text-xs font-normal">
+                    {mustDoTasks.length} must-do{mustDoTasks.length !== 1 ? "s" : ""}
+                  </Badge>
+                </CardTitle>
+                {/* Work / Personal filter */}
+                <div className="flex gap-1">
+                  {(["all", "work", "personal"] as ContextFilter[]).map((f) => (
+                    <button
+                      key={f}
+                      onClick={() => setContextFilter(f)}
+                      className={cn(
+                        "rounded-full px-2.5 py-0.5 text-xs font-medium transition-all capitalize",
+                        contextFilter === f
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {f === "work" ? "💼 Work" : f === "personal" ? "🏠 Personal" : "All"}
+                    </button>
+                  ))}
                 </div>
-                {tasks.length > 0 && (
-                  <div className="mt-2">
-                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                      <span>{tasks.filter((t) => t.status === "done").length} of {tasks.length} done</span>
-                      <span>{completionRate}%</span>
-                    </div>
-                    <Progress value={completionRate} className="h-1.5" />
+              </div>
+              {tasks.length > 0 && (
+                <div className="mt-2">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                    <span>{tasks.filter((t) => t.status === "done").length} of {tasks.length} done</span>
+                    <span>{completionRate}%</span>
                   </div>
-                )}
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {tasks.length === 0 ? (
-                  <div className="empty-state py-8">
-                    <p className="text-3xl mb-2">🌿</p>
-                    <p className="text-sm font-medium">Nothing planned yet</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Add a task or let AI plan your day
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    {/* Group by category */}
-                    {(["must_do", "should_do", "if_energy"] as const).map((cat) => {
-                      const catTasks = tasks.filter((t) => t.category === cat);
-                      if (!catTasks.length) return null;
-                      const config = TASK_CATEGORY_CONFIG[cat];
-                      return (
-                        <div key={cat} className="space-y-1.5">
-                          <p className={cn("text-xs font-semibold uppercase tracking-wider", config.color)}>
-                            {config.emoji} {config.label}
-                          </p>
-                          {catTasks.map((task) => (
-                            <TaskItem
-                              key={task.id}
-                              task={task}
-                              onComplete={() => completeTask(task.id)}
-                            />
-                          ))}
-                        </div>
-                      );
-                    })}
-                  </>
-                )}
-                <TaskQuickAdd userId={profile?.id ?? ""} onAdded={(task) => setTasks((p) => [...p, task])} />
-              </CardContent>
-            </Card>
-          </div>
+                  <Progress value={completionRate} className="h-1.5" />
+                </div>
+              )}
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {filteredTasks.length === 0 && tasks.length === 0 ? (
+                <div className="empty-state py-8">
+                  <p className="text-3xl mb-2">🌿</p>
+                  <p className="text-sm font-medium">Nothing planned yet</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Add a task or let AI plan your day
+                  </p>
+                </div>
+              ) : filteredTasks.length === 0 ? (
+                <div className="empty-state py-6">
+                  <p className="text-sm text-muted-foreground">No {contextFilter} tasks today</p>
+                </div>
+              ) : (
+                <>
+                  {(["must_do", "should_do", "if_energy"] as const).map((cat) => {
+                    const catTasks = filteredTasks.filter((t) => t.category === cat);
+                    if (!catTasks.length) return null;
+                    const config = TASK_CATEGORY_CONFIG[cat];
+                    return (
+                      <div key={cat} className="space-y-1.5">
+                        <p className={cn("text-xs font-semibold uppercase tracking-wider", config.color)}>
+                          {config.emoji} {config.label}
+                        </p>
+                        {catTasks.map((task) => (
+                          <TaskItem
+                            key={task.id}
+                            task={task}
+                            onComplete={() => completeTask(task.id)}
+                          />
+                        ))}
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+              <TaskQuickAdd
+                userId={profile?.id ?? ""}
+                onAdded={(task) => {
+                  setTasks((p) => [...p, task]);
+                  router.refresh();
+                }}
+              />
+            </CardContent>
+          </Card>
 
           {/* AI Assistant */}
-          <div>
-            <AIAssistantCard profile={profile} tasks={tasks} mood={mood} />
-          </div>
+          <AIAssistantCard profile={profile} tasks={tasks} mood={mood} />
         </div>
 
         {/* Right column */}
         <div className="space-y-6">
-          {/* Mood tracker */}
-          <div>
-            <MoodTracker
-              mood={mood}
-              onMoodSaved={(newMood) => setMood(newMood)}
-              userId={profile?.id ?? ""}
-            />
-          </div>
+          <MoodTracker
+            mood={mood}
+            onMoodSaved={(newMood) => setMood(newMood)}
+            userId={profile?.id ?? ""}
+          />
 
-          {/* Habits */}
-          <div>
-            <HabitList
-              habits={habits}
-              onToggle={toggleHabit}
-              onAdded={(habit) => setHabits((p) => [...p, habit])}
-              subscription={subscription}
-              userId={profile?.id ?? ""}
-            />
-          </div>
+          <HabitList
+            habits={habits}
+            onToggle={toggleHabit}
+            onAdded={(habit) => setHabits((p) => [...p, habit])}
+            subscription={subscription}
+            userId={profile?.id ?? ""}
+          />
 
-          {/* Cycle widget */}
-          {profile?.id && (
-            <div>
-              <CycleWidget userId={profile.id} />
-            </div>
-          )}
+          {profile?.id && <CycleWidget userId={profile.id} />}
 
-          {/* Weekly plan preview */}
+          <FoodLogCard userId={profile?.id ?? ""} />
+
           {weeklyPlan && (
-            <div>
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">📅 This Week</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {weeklyPlan.theme && (
-                    <p className="text-xs text-muted-foreground">Theme: <span className="font-medium text-foreground">{weeklyPlan.theme}</span></p>
-                  )}
-                  {weeklyPlan.big_three?.map((goal, i) => (
-                    <div key={i} className="flex items-center gap-2 text-sm">
-                      <span className="text-primary">✦</span>
-                      <span>{goal}</span>
-                    </div>
-                  ))}
-                  {!weeklyPlan.big_three?.length && (
-                    <p className="text-xs text-muted-foreground italic">No weekly goals set yet</p>
-                  )}
-                  <Button variant="ghost" size="sm" className="w-full mt-2 text-xs" asChild>
-                    <a href="/planner">View full week →</a>
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">📅 This Week</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {weeklyPlan.theme && (
+                  <p className="text-xs text-muted-foreground">Theme: <span className="font-medium text-foreground">{weeklyPlan.theme}</span></p>
+                )}
+                {weeklyPlan.big_three?.map((goal, i) => (
+                  <div key={i} className="flex items-center gap-2 text-sm">
+                    <span className="text-primary">✦</span>
+                    <span>{goal}</span>
+                  </div>
+                ))}
+                {!weeklyPlan.big_three?.length && (
+                  <p className="text-xs text-muted-foreground italic">No weekly goals set yet</p>
+                )}
+                <Button variant="ghost" size="sm" className="w-full mt-2 text-xs" asChild>
+                  <a href="/planner">View full week →</a>
+                </Button>
+              </CardContent>
+            </Card>
           )}
         </div>
       </div>
@@ -310,6 +348,8 @@ export function DashboardContent({
 
 function TaskItem({ task, onComplete }: { task: Task; onComplete: () => void }) {
   const isDone = task.status === "done";
+  const tags = (task.tags as string[] | null) ?? [];
+  const context = tags.includes("work") ? "💼" : tags.includes("personal") ? "🏠" : null;
 
   return (
     <div className={cn(
@@ -338,11 +378,10 @@ function TaskItem({ task, onComplete }: { task: Task; onComplete: () => void }) 
           {task.emoji} {task.title}
         </p>
         {task.estimated_minutes && (
-          <p className="text-xs text-muted-foreground">
-            ~{task.estimated_minutes} min
-          </p>
+          <p className="text-xs text-muted-foreground">~{task.estimated_minutes} min</p>
         )}
       </div>
+      {context && <span className="text-sm shrink-0">{context}</span>}
     </div>
   );
 }

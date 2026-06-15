@@ -2,7 +2,6 @@ import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardContent } from "@/components/dashboard/DashboardContent";
 import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
-import { format } from "date-fns";
 
 export const metadata = { title: "Dashboard" };
 
@@ -11,15 +10,18 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const today = format(new Date(), "yyyy-MM-dd");
+  // Fetch profile first to get timezone, so today's date is correct for the user's locale
+  const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+  const userTz = profile?.timezone ?? "UTC";
 
-  // Fetch all dashboard data in parallel
+  // Compute today in the user's local timezone (en-CA locale gives YYYY-MM-DD format)
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: userTz });
+
   const [
     { data: tasks },
     { data: habits },
     { data: completions },
     { data: mood },
-    { data: profile },
     { data: subscription },
     { data: weeklyPlan },
   ] = await Promise.all([
@@ -47,7 +49,6 @@ export default async function DashboardPage() {
       .eq("user_id", user.id)
       .eq("date", today)
       .single(),
-    supabase.from("profiles").select("*").eq("id", user.id).single(),
     supabase.from("subscriptions").select("*").eq("user_id", user.id).single(),
     supabase
       .from("weekly_plans")

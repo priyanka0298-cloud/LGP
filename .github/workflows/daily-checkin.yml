@@ -1,0 +1,17 @@
+name: Daily Check-in Emails
+
+on:
+  schedule:
+    # Runs every hour at :00 — GitHub Actions is free for this
+    - cron: "0 * * * *"
+  workflow_dispatch: # allows manual trigger from GitHub UI
+
+jobs:
+  send-checkins:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger daily check-in emails
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://lazy-girl-planner.vercel.app/api/cron/daily-checkin

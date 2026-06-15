@@ -12,6 +12,23 @@ export type Subscription = Database["public"]["Tables"]["subscriptions"]["Row"];
 export type PlannerTemplate = Database["public"]["Tables"]["planner_templates"]["Row"];
 
 export type TaskCategory = "must_do" | "should_do" | "if_energy" | "someday";
+
+export interface TemplateConfig {
+  habits?: Array<{
+    name: string;
+    emoji?: string;
+    frequency?: "daily" | "weekdays" | "weekends" | "weekly";
+    category?: string;
+    color?: string;
+    description?: string;
+  }>;
+  tasks?: Array<{
+    title: string;
+    category?: TaskCategory;
+    emoji?: string;
+  }>;
+  welcome_message?: string;
+}
 export type TaskStatus = "pending" | "in_progress" | "done" | "skipped" | "rolled_over";
 export type MoodLabel = "terrible" | "rough" | "meh" | "okay" | "good" | "great" | "amazing";
 export type SubscriptionPlan = "free" | "premium" | "lifetime";

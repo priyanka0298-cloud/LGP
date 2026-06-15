@@ -47,6 +47,14 @@ const THEMES: Array<{ id: "light" | "dark" | "auto"; label: string; emoji: strin
 
 type Section = "profile" | "appearance" | "notifications" | "subscription" | "privacy";
 
+function formatTime(time: string) {
+  const [h] = time.split(":").map(Number);
+  if (h === 0) return "12:00 AM";
+  if (h < 12) return `${h}:00 AM`;
+  if (h === 12) return "12:00 PM";
+  return `${h - 12}:00 PM`;
+}
+
 const stripeReady = !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY &&
   !process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.startsWith("pk_test_your-");
 
@@ -59,6 +67,11 @@ export function SettingsView({
 }) {
   const [activeSection, setActiveSection] = useState<Section>("profile");
   const [selectedColor, setSelectedColor] = useState<AccentColor>(profile?.accent_color ?? "rose");
+  const [reminderEnabled, setReminderEnabled] = useState(profile?.daily_reminder_enabled ?? false);
+  const [reminderTime, setReminderTime] = useState(profile?.daily_reminder_time ?? "08:00");
+  const [reminderFrequency, setReminderFrequency] = useState<"daily" | "weekly">(profile?.reminder_frequency ?? "weekly");
+  const [savingNotifications, setSavingNotifications] = useState(false);
+  const isPremium = subscription?.plan !== "free";
 
   function applyAccentColor(color: AccentColor) {
     setSelectedColor(color);
@@ -121,6 +134,23 @@ export function SettingsView({
     } else {
       toast.success("Appearance saved 🎨");
     }
+  }
+
+  async function saveNotifications() {
+    setSavingNotifications(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        daily_reminder_enabled: reminderEnabled,
+        daily_reminder_time: reminderTime,
+        reminder_frequency: isPremium ? reminderFrequency : "weekly",
+      })
+      .eq("id", profile!.id);
+    setSavingNotifications(false);
+    if (error) toast.error("Couldn't save notification settings.");
+    else if (!reminderEnabled) toast.success("Check-in notifications turned off.");
+    else if (reminderFrequency === "weekly") toast.success("Weekly check-in set for Mondays 🌿");
+    else toast.success(`Daily check-in set for ${formatTime(reminderTime)} 🌸`);
   }
 
   async function openBillingPortal() {
@@ -318,9 +348,105 @@ export function SettingsView({
               <Card>
                 <CardHeader>
                   <CardTitle>Notifications</CardTitle>
+                  <p className="text-sm text-muted-foreground">Get a gentle email to check in with your planner.</p>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">Notification settings coming soon 🌸</p>
+                <CardContent className="space-y-6">
+                  {/* Enable toggle */}
+                  <div className="flex items-center justify-between rounded-xl border border-border p-4">
+                    <div>
+                      <p className="text-sm font-medium">Check-in emails</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">A soft nudge to open your planner</p>
+                    </div>
+                    <button
+                      role="switch"
+                      aria-checked={reminderEnabled}
+                      onClick={() => setReminderEnabled(!reminderEnabled)}
+                      className={cn(
+                        "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200",
+                        reminderEnabled ? "bg-primary" : "bg-muted"
+                      )}
+                    >
+                      <span className={cn(
+                        "pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transition-transform duration-200",
+                        reminderEnabled ? "translate-x-5" : "translate-x-0"
+                      )} />
+                    </button>
+                  </div>
+
+                  {reminderEnabled && (
+                    <div className="space-y-4">
+                      {/* Frequency selector */}
+                      <div className="space-y-2">
+                        <Label>How often?</Label>
+                        <div className="grid grid-cols-2 gap-3">
+                          {/* Weekly — free */}
+                          <button
+                            onClick={() => setReminderFrequency("weekly")}
+                            className={cn(
+                              "rounded-xl border p-3 text-left transition-all",
+                              reminderFrequency === "weekly"
+                                ? "border-primary bg-primary/5"
+                                : "border-border hover:border-primary/40"
+                            )}
+                          >
+                            <p className="text-sm font-medium">🌿 Weekly</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">Every Monday morning</p>
+                          </button>
+
+                          {/* Daily — premium */}
+                          <button
+                            onClick={() => isPremium && setReminderFrequency("daily")}
+                            className={cn(
+                              "rounded-xl border p-3 text-left transition-all relative",
+                              !isPremium && "opacity-60 cursor-not-allowed",
+                              isPremium && reminderFrequency === "daily"
+                                ? "border-primary bg-primary/5"
+                                : "border-border",
+                              isPremium && reminderFrequency !== "daily" && "hover:border-primary/40"
+                            )}
+                          >
+                            <p className="text-sm font-medium">🌸 Daily</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">At your chosen time</p>
+                            {!isPremium && (
+                              <span className="absolute top-2 right-2 text-[10px] font-semibold bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
+                                Premium
+                              </span>
+                            )}
+                          </button>
+                        </div>
+                        {!isPremium && (
+                          <p className="text-xs text-muted-foreground">
+                            Upgrade to Premium to get daily check-ins at your chosen time ✨
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Time picker — daily + premium only */}
+                      {isPremium && reminderFrequency === "daily" && (
+                        <div className="space-y-2">
+                          <Label htmlFor="reminder-time">What time?</Label>
+                          <select
+                            id="reminder-time"
+                            value={reminderTime}
+                            onChange={e => setReminderTime(e.target.value)}
+                            className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                          >
+                            {Array.from({ length: 18 }, (_, i) => i + 5).map(hour => {
+                              const val = `${String(hour).padStart(2, "0")}:00`;
+                              const label = hour < 12 ? `${hour}:00 AM` : hour === 12 ? "12:00 PM" : `${hour - 12}:00 PM`;
+                              return <option key={val} value={val}>{label}</option>;
+                            })}
+                          </select>
+                          <p className="text-xs text-muted-foreground">Timezone: {profile?.timezone ?? "America/New_York"}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <Button onClick={saveNotifications} disabled={savingNotifications} className="gap-2">
+                    {savingNotifications ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                    Save notification settings
+                  </Button>
                 </CardContent>
               </Card>
             )}

@@ -1,27 +1,30 @@
 "use client";
 
 import React, { useState } from "react";
-import { motion } from "framer-motion";
-import { Download, Star, ShoppingBag, Filter, Search, Sparkles, Lock } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Star, Filter, Search, Sparkles, Lock, CheckCircle2, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { formatCurrency, cn } from "@/lib/utils";
 import type { PlannerTemplate } from "@/types";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 interface MarketplaceViewProps {
   templates: PlannerTemplate[];
   purchasedIds: Set<string>;
   userId: string | null;
+  isPremium: boolean;
 }
 
 const CATEGORIES = ["All", "weekly", "daily", "monthly", "goal", "habit", "journal", "vision_board"];
 
-export function MarketplaceView({ templates, purchasedIds, userId }: MarketplaceViewProps) {
+export function MarketplaceView({ templates, purchasedIds, userId, isPremium }: MarketplaceViewProps) {
   const [activeCategory, setActiveCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [applying, setApplying] = useState<string | null>(null);
+  const [applied, setApplied] = useState<Set<string>>(new Set(purchasedIds));
+  const router = useRouter();
 
   const filtered = templates.filter((t) => {
     const matchesCategory = activeCategory === "All" || t.category === activeCategory;
@@ -34,12 +37,14 @@ export function MarketplaceView({ templates, purchasedIds, userId }: Marketplace
 
   const featured = templates.filter((t) => t.is_featured);
 
-  async function handleDownload(template: PlannerTemplate) {
+  async function handleApply(template: PlannerTemplate) {
     if (!userId) {
-      toast.error("Sign in to download templates 🌸");
+      toast.error("Sign in to use templates 🌸");
       return;
     }
-    if (template.price_cents > 0 && !purchasedIds.has(template.id)) {
+
+    // Paid template — check premium or go to checkout
+    if (template.price_cents > 0 && !applied.has(template.id)) {
       const stripeReady = !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY &&
         !process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.startsWith("pk_test_your-");
       if (!stripeReady) {
@@ -56,21 +61,35 @@ export function MarketplaceView({ templates, purchasedIds, userId }: Marketplace
       if (url) window.location.href = url;
       return;
     }
-    // Free or already purchased — trigger download
-    if (template.file_url) {
-      window.open(template.file_url, "_blank");
-      toast.success("Download started! 🌸");
-    } else {
-      toast.info("Download link coming soon!");
+
+    // Free or already purchased — apply
+    setApplying(template.id);
+    try {
+      const res = await fetch("/api/templates/apply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ templateId: template.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Something went wrong 🌸");
+        return;
+      }
+      setApplied((prev) => new Set([...prev, template.id]));
+      toast.success(data.welcome, { duration: 5000 });
+      router.refresh();
+    } catch {
+      toast.error("Couldn't apply the template. Try again 🌸");
+    } finally {
+      setApplying(null);
     }
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h1 className="font-display text-2xl font-bold">Template Marketplace 🛍️</h1>
-        <p className="text-sm text-muted-foreground">Beautiful planning templates — many completely free</p>
+        <p className="text-sm text-muted-foreground">Curated planning systems — apply one tap to your planner</p>
       </div>
 
       {/* Search & filters */}
@@ -110,12 +129,13 @@ export function MarketplaceView({ templates, purchasedIds, userId }: Marketplace
             Staff Picks
           </p>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {featured.slice(0, 3).map((template, i) => (
+            {featured.slice(0, 3).map((template) => (
               <TemplateCard
                 key={template.id}
                 template={template}
-                isPurchased={purchasedIds.has(template.id)}
-                onDownload={() => handleDownload(template)}
+                isApplied={applied.has(template.id)}
+                isApplying={applying === template.id}
+                onApply={() => handleApply(template)}
                 featured
               />
             ))}
@@ -125,7 +145,7 @@ export function MarketplaceView({ templates, purchasedIds, userId }: Marketplace
 
       {/* All templates */}
       <div>
-        {activeCategory !== "All" || searchQuery ? null : (
+        {(activeCategory !== "All" || searchQuery) ? null : (
           <p className="text-sm font-semibold mb-3">All Templates ({filtered.length})</p>
         )}
         {filtered.length === 0 ? (
@@ -140,8 +160,9 @@ export function MarketplaceView({ templates, purchasedIds, userId }: Marketplace
               <TemplateCard
                 key={template.id}
                 template={template}
-                isPurchased={purchasedIds.has(template.id)}
-                onDownload={() => handleDownload(template)}
+                isApplied={applied.has(template.id)}
+                isApplying={applying === template.id}
+                onApply={() => handleApply(template)}
               />
             ))}
           </div>
@@ -153,27 +174,28 @@ export function MarketplaceView({ templates, purchasedIds, userId }: Marketplace
 
 function TemplateCard({
   template,
-  isPurchased,
-  onDownload,
+  isApplied,
+  isApplying,
+  onApply,
   featured,
 }: {
   template: PlannerTemplate;
-  isPurchased: boolean;
-  onDownload: () => void;
+  isApplied: boolean;
+  isApplying: boolean;
+  onApply: () => void;
   featured?: boolean;
 }) {
   const isFree = template.price_cents === 0;
-  const canDownload = isFree || isPurchased;
+  const canApply = isFree || isApplied;
 
   return (
-    <motion.div
-      whileHover={{ y: -2 }}
+    <div
       className={cn(
-        "rounded-2xl border border-border/50 bg-card overflow-hidden group cursor-pointer",
+        "rounded-2xl border border-border/50 bg-card overflow-hidden group",
         featured && "ring-1 ring-primary/20"
       )}
     >
-      {/* Preview image */}
+      {/* Preview image / color block */}
       <div className="relative aspect-[4/3] bg-gradient-to-br from-rose-100 to-purple-100 dark:from-rose-950/40 dark:to-purple-950/40 overflow-hidden">
         {template.preview_images?.[0] ? (
           <img
@@ -182,7 +204,9 @@ function TemplateCard({
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-4xl">📋</div>
+          <div className="flex h-full items-center justify-center text-4xl">
+            {CATEGORY_EMOJI[template.category] ?? "📋"}
+          </div>
         )}
         {featured && (
           <div className="absolute top-2 right-2">
@@ -194,6 +218,13 @@ function TemplateCard({
         {isFree && (
           <div className="absolute top-2 left-2">
             <Badge variant="sage" className="text-xs">Free</Badge>
+          </div>
+        )}
+        {isApplied && (
+          <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="bg-white/90 rounded-xl px-3 py-1.5 flex items-center gap-1.5 text-sm font-medium text-emerald-700">
+              <CheckCircle2 className="h-4 w-4" /> Applied
+            </div>
           </div>
         )}
       </div>
@@ -214,7 +245,7 @@ function TemplateCard({
         <div className="flex gap-1 flex-wrap mb-3">
           {template.tags?.slice(0, 3).map((tag) => (
             <span key={tag} className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground capitalize">
-              {tag.replace("-", " ")}
+              {tag.replace(/-/g, " ")}
             </span>
           ))}
         </div>
@@ -222,8 +253,8 @@ function TemplateCard({
         {/* Stats */}
         <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
           <span className="flex items-center gap-1">
-            <Download className="h-3 w-3" />
-            {template.download_count.toLocaleString()}
+            <Wand2 className="h-3 w-3" />
+            {template.download_count.toLocaleString()} applied
           </span>
           {template.rating_average && (
             <span className="flex items-center gap-1">
@@ -234,15 +265,26 @@ function TemplateCard({
         </div>
 
         <Button
-          variant={canDownload ? "gradient" : "outline"}
+          variant={isApplied ? "outline" : canApply ? "gradient" : "outline"}
           size="sm"
           className="w-full gap-1.5 text-xs"
-          onClick={onDownload}
+          onClick={onApply}
+          disabled={isApplying || isApplied}
         >
-          {canDownload ? (
+          {isApplied ? (
             <>
-              <Download className="h-3.5 w-3.5" />
-              {isPurchased ? "Download" : "Get Free"}
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+              Applied to your planner
+            </>
+          ) : isApplying ? (
+            <>
+              <span className="animate-spin">✨</span>
+              Applying...
+            </>
+          ) : canApply ? (
+            <>
+              <Wand2 className="h-3.5 w-3.5" />
+              Use this template
             </>
           ) : (
             <>
@@ -252,6 +294,16 @@ function TemplateCard({
           )}
         </Button>
       </div>
-    </motion.div>
+    </div>
   );
 }
+
+const CATEGORY_EMOJI: Record<string, string> = {
+  weekly: "📅",
+  daily: "☀️",
+  monthly: "🗓️",
+  goal: "🎯",
+  habit: "🌿",
+  journal: "📓",
+  vision_board: "✨",
+};

@@ -31,6 +31,7 @@ export interface Database {
           avg_period_length: number;
           daily_reminder_enabled: boolean;
           daily_reminder_time: string;
+          reminder_frequency: "daily" | "weekly";
           weekly_review_day: number;
           push_enabled: boolean;
           created_at: string;
@@ -72,6 +73,7 @@ export interface Database {
           avg_period_length?: number;
           daily_reminder_enabled?: boolean;
           daily_reminder_time?: string;
+          reminder_frequency?: "daily" | "weekly";
           weekly_review_day?: number;
           push_enabled?: boolean;
         };
@@ -517,6 +519,7 @@ export interface Database {
         };
         Update: {
           title?: string;
+          category?: string;
           description?: string | null;
           long_description?: string | null;
           tags?: string[];

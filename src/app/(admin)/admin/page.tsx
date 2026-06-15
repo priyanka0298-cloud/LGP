@@ -20,6 +20,7 @@ export default async function AdminPage() {
     { count: taskCount },
     { count: premiumCount },
     { data: recentUsers },
+    { data: templates },
   ] = await Promise.all([
     supabase.from("profiles").select("*", { count: "exact", head: true }),
     supabase.from("tasks").select("*", { count: "exact", head: true }),
@@ -29,6 +30,10 @@ export default async function AdminPage() {
       .select("id, email, full_name, created_at, onboarding_completed")
       .order("created_at", { ascending: false })
       .limit(20),
+    supabase
+      .from("planner_templates")
+      .select("*")
+      .order("created_at", { ascending: false }),
   ]);
 
   return (
@@ -40,6 +45,7 @@ export default async function AdminPage() {
         conversionRate: userCount ? Math.round(((premiumCount ?? 0) / userCount) * 100) : 0,
       }}
       recentUsers={recentUsers ?? []}
+      templates={templates ?? []}
     />
   );
 }

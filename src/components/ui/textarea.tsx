@@ -10,6 +10,9 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
           className
         )}
         ref={ref}
+        suppressHydrationWarning
+        data-gramm="false"
+        data-gramm_editor="false"
         {...props}
       />
     );

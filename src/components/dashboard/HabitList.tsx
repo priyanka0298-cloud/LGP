@@ -1,26 +1,66 @@
 "use client";
 
-import React from "react";
-import { motion } from "framer-motion";
-import { Plus, Flame, Lock } from "lucide-react";
+import React, { useState, useRef } from "react";
+import { Plus, Flame, Lock, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn, pluralize } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 import type { Habit, Subscription } from "@/types";
 
 interface HabitListProps {
   habits: Array<Habit & { completedToday: boolean }>;
   onToggle: (habitId: string, completed: boolean) => Promise<void>;
+  onAdded?: (habit: Habit & { completedToday: boolean }) => void;
   subscription: Subscription | null;
+  userId: string;
 }
 
 const FREE_LIMIT = 5;
 
-export function HabitList({ habits, onToggle, subscription }: HabitListProps) {
+const QUICK_EMOJIS = ["✨", "💧", "🏃", "📚", "🧘", "🥗", "😴", "🌿", "💪", "🎯"];
+
+export function HabitList({ habits, onToggle, onAdded, subscription, userId }: HabitListProps) {
   const isPremium = subscription?.plan !== "free";
   const completedCount = habits.filter((h) => h.completedToday).length;
   const progress = habits.length ? (completedCount / habits.length) * 100 : 0;
+  const [adding, setAdding] = useState(false);
+  const [name, setName] = useState("");
+  const [emoji, setEmoji] = useState("✨");
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const supabase = createClient();
+
+  const canAdd = isPremium || habits.length < FREE_LIMIT;
+
+  async function saveHabit() {
+    if (!name.trim()) return;
+    setSaving(true);
+    const { data, error } = await supabase
+      .from("habits")
+      .insert({ user_id: userId, name: name.trim(), emoji, frequency: "daily", color: "#f43f5e" })
+      .select()
+      .single();
+
+    if (error) { toast.error("Couldn't save habit. Try again?"); setSaving(false); return; }
+    onAdded?.({ ...(data as Habit), completedToday: false });
+    setName("");
+    setEmoji("✨");
+    setAdding(false);
+    setSaving(false);
+    toast.success("Habit added 🌿");
+  }
+
+  function openForm() {
+    if (!canAdd) { toast.error("Upgrade to add more than 5 habits ✨"); return; }
+    setAdding(true);
+    setTimeout(() => {
+      inputRef.current?.focus();
+      inputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 50);
+  }
 
   return (
     <Card>
@@ -32,7 +72,7 @@ export function HabitList({ habits, onToggle, subscription }: HabitListProps) {
               {completedCount} of {habits.length} today
             </p>
           </div>
-          <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs">
+          <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={openForm}>
             <Plus className="h-3 w-3" />
             Add
           </Button>
@@ -57,16 +97,45 @@ export function HabitList({ habits, onToggle, subscription }: HabitListProps) {
             <p className="text-xs text-muted-foreground">Start with just one small thing</p>
           </div>
         ) : (
-          habits.map((habit, i) => (
-            <motion.div
-              key={habit.id}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.05 }}
-            >
+          habits.map((habit) => (
+            <div key={habit.id}>
               <HabitItem habit={habit} onToggle={onToggle} />
-            </motion.div>
+            </div>
           ))
+        )}
+
+        {/* Inline add form */}
+        {adding && (
+          <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2">
+            <div className="flex gap-2">
+              <input
+                ref={inputRef}
+                type="text"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") saveHabit(); if (e.key === "Escape") setAdding(false); }}
+                placeholder="Habit name..."
+                className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+              <button onClick={() => setAdding(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {QUICK_EMOJIS.map(e => (
+                <button
+                  key={e}
+                  onClick={() => setEmoji(e)}
+                  className={cn("text-lg rounded-lg p-1 transition-all", emoji === e ? "bg-primary/20 ring-1 ring-primary" : "hover:bg-muted")}
+                >
+                  {e}
+                </button>
+              ))}
+            </div>
+            <Button size="sm" variant="gradient" onClick={saveHabit} disabled={saving || !name.trim()} className="w-full h-8 text-xs">
+              {saving ? "Saving..." : "Add habit"}
+            </Button>
+          </div>
         )}
 
         {/* Free tier limit notice */}

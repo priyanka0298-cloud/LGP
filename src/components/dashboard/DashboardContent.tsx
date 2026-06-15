@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import React, { useState } from "react";
 import { format } from "date-fns";
 import { Sparkles, Flame, Target, Sun, TrendingUp, Plus, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,15 +28,6 @@ interface DashboardContentProps {
   weeklyPlan: WeeklyPlan | null;
 }
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.08 } },
-};
-
-const cardVariants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
-};
 
 export function DashboardContent({
   tasks: initialTasks,
@@ -103,14 +93,9 @@ export function DashboardContent({
   }
 
   return (
-    <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      className="space-y-6"
-    >
+    <div className="space-y-6">
       {/* Header row */}
-      <motion.div variants={cardVariants} className="flex items-start justify-between">
+      <div className="flex items-start justify-between">
         <div>
           <h1 className="font-display text-2xl font-bold">
             {format(today, "EEEE, MMMM d")} 🌸
@@ -125,17 +110,17 @@ export function DashboardContent({
           {subscription?.plan === "free" && (
             <Badge variant="soft" className="hidden sm:flex">Free plan</Badge>
           )}
-          <Button variant="soft" size="sm" className="gap-1.5">
+          <Button variant="soft" size="sm" className="gap-1.5" onClick={() => { setTasks([]); toast.success("Fresh start ✨ Your tasks are cleared for a gentle reset."); }}>
             <RefreshCw className="h-3.5 w-3.5" />
             Soft Reset
           </Button>
         </div>
-      </motion.div>
+      </div>
 
       {/* Daily Affirmation */}
-      <motion.div variants={cardVariants}>
+      <div>
         <DailyAffirmation mood={mood} profile={profile} />
-      </motion.div>
+      </div>
 
       {/* Stats row */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -169,7 +154,7 @@ export function DashboardContent({
             bg: "from-emerald-50 to-teal-50 dark:from-emerald-950/30",
           },
         ].map((stat, i) => (
-          <motion.div key={stat.label} variants={cardVariants}>
+          <div key={stat.label}>
             <div className={cn(
               "rounded-2xl bg-gradient-to-br border border-border/40 p-4",
               stat.bg
@@ -183,7 +168,7 @@ export function DashboardContent({
               <p className="text-2xl font-bold">{stat.value}</p>
               <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
             </div>
-          </motion.div>
+          </div>
         ))}
       </div>
 
@@ -192,7 +177,7 @@ export function DashboardContent({
         {/* Tasks column (2/3 width) */}
         <div className="space-y-6 lg:col-span-2">
           {/* Today's focus */}
-          <motion.div variants={cardVariants}>
+          <div>
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
@@ -253,44 +238,46 @@ export function DashboardContent({
                 <TaskQuickAdd userId={profile?.id ?? ""} onAdded={(task) => setTasks((p) => [...p, task])} />
               </CardContent>
             </Card>
-          </motion.div>
+          </div>
 
           {/* AI Assistant */}
-          <motion.div variants={cardVariants}>
+          <div>
             <AIAssistantCard profile={profile} tasks={tasks} mood={mood} />
-          </motion.div>
+          </div>
         </div>
 
         {/* Right column */}
         <div className="space-y-6">
           {/* Mood tracker */}
-          <motion.div variants={cardVariants}>
+          <div>
             <MoodTracker
               mood={mood}
               onMoodSaved={(newMood) => setMood(newMood)}
               userId={profile?.id ?? ""}
             />
-          </motion.div>
+          </div>
 
           {/* Habits */}
-          <motion.div variants={cardVariants}>
+          <div>
             <HabitList
               habits={habits}
               onToggle={toggleHabit}
+              onAdded={(habit) => setHabits((p) => [...p, habit])}
               subscription={subscription}
+              userId={profile?.id ?? ""}
             />
-          </motion.div>
+          </div>
 
           {/* Cycle widget */}
           {profile?.id && (
-            <motion.div variants={cardVariants}>
+            <div>
               <CycleWidget userId={profile.id} />
-            </motion.div>
+            </div>
           )}
 
           {/* Weekly plan preview */}
           {weeklyPlan && (
-            <motion.div variants={cardVariants}>
+            <div>
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">📅 This Week</CardTitle>
@@ -313,11 +300,11 @@ export function DashboardContent({
                   </Button>
                 </CardContent>
               </Card>
-            </motion.div>
+            </div>
           )}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
 

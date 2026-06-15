@@ -7,7 +7,7 @@ export default async function MarketplacePage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const [{ data: templates }, { data: purchases }] = await Promise.all([
+  const [{ data: templates }, { data: purchases }, { data: subscription }] = await Promise.all([
     supabase
       .from("planner_templates")
       .select("*")
@@ -17,15 +17,20 @@ export default async function MarketplacePage() {
     user
       ? supabase.from("template_purchases").select("template_id").eq("user_id", user.id)
       : Promise.resolve({ data: [] }),
+    user
+      ? supabase.from("subscriptions").select("plan").eq("user_id", user.id).maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
 
   const purchasedIds = new Set((purchases ?? []).map((p) => p.template_id));
+  const isPremium = subscription?.plan === "premium" || subscription?.plan === "lifetime";
 
   return (
     <MarketplaceView
       templates={templates ?? []}
       purchasedIds={purchasedIds}
       userId={user?.id ?? null}
+      isPremium={isPremium}
     />
   );
 }

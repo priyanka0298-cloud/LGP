@@ -102,7 +102,7 @@ export function Topbar({ profile }: TopbarProps) {
                 <Link href="/settings">Profile Settings</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild className="rounded-xl cursor-pointer">
-                <Link href="/settings#subscription">
+                <Link href="/pricing">
                   <Sparkles className="mr-2 h-4 w-4 text-rose-500" />
                   Upgrade to Premium
                 </Link>

@@ -34,7 +34,6 @@ export function WeeklyPlannerView({
   const [weekStart, setWeekStart] = useState(initialWeekStart);
   const [weekEnd, setWeekEnd] = useState(initialWeekEnd);
   const [tasksByDate, setTasksByDate] = useState(initialTasksByDate);
-  const [intention, setIntention] = useState(weeklyPlan?.intention ?? "");
   const [theme, setTheme] = useState(weeklyPlan?.theme ?? "");
   const [editingMeta, setEditingMeta] = useState(false);
   const supabase = createClient();
@@ -69,11 +68,10 @@ export function WeeklyPlannerView({
       user_id: userId,
       week_start: weekStartStr,
       week_end: weekEndStr,
-      intention: intention || null,
       theme: theme || null,
     }, { onConflict: "user_id,week_start" });
     setEditingMeta(false);
-    toast.success("Week intention saved 🌸");
+    toast.success("Week theme saved 🌸");
   }
 
   return (
@@ -112,27 +110,20 @@ export function WeeklyPlannerView({
               onChange={(e) => setTheme(e.target.value)}
               className="text-sm"
             />
-            <Input
-              placeholder="Intention / mantra for the week"
-              value={intention}
-              onChange={(e) => setIntention(e.target.value)}
-              className="text-sm"
-            />
             <Button variant="gradient" size="sm" onClick={saveMeta}>Save</Button>
             <Button variant="ghost" size="sm" onClick={() => setEditingMeta(false)}>Cancel</Button>
           </div>
         ) : (
           <div className="flex items-center justify-between">
             <div>
-              {theme && <p className="text-sm font-semibold">Week of: {theme}</p>}
-              {intention ? (
-                <p className="text-sm text-muted-foreground italic">&ldquo;{intention}&rdquo;</p>
+              {theme ? (
+                <p className="text-sm font-semibold">Week theme: {theme}</p>
               ) : (
-                <p className="text-sm text-muted-foreground">Set a weekly intention to guide your week</p>
+                <p className="text-sm text-muted-foreground">Set a theme for your week</p>
               )}
             </div>
             <Button variant="ghost" size="sm" onClick={() => setEditingMeta(true)} className="text-xs">
-              {intention ? "Edit" : "+ Add intention"}
+              {theme ? "Edit" : "+ Add theme"}
             </Button>
           </div>
         )}

@@ -11,8 +11,9 @@ const LINKS: Record<string, { label: string; href: string }[]> = {
   Support: [
     { label: "Sign Up", href: "/signup" },
     { label: "Log In", href: "/login" },
-    { label: "Privacy Policy", href: "#" },
-    { label: "Terms of Service", href: "#" },
+    { label: "Contact Us", href: "/contact" },
+    { label: "Privacy Policy", href: "/privacy" },
+    { label: "Terms of Service", href: "/terms" },
   ],
 };
 

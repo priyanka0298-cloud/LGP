@@ -31,7 +31,7 @@ export async function GET(request: Request) {
   );
 
   const resend = getResendClient();
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://lazy-girl-planner.vercel.app";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://softlivi.vercel.app";
   const nowUtc = new Date();
 
   const { data: profiles, error } = await supabase

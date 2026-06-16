@@ -107,6 +107,9 @@ export function Topbar({ profile }: TopbarProps) {
                   Upgrade to Premium
                 </Link>
               </DropdownMenuItem>
+              <DropdownMenuItem asChild className="rounded-xl cursor-pointer">
+                <Link href="/contact">Contact Us</Link>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem className="rounded-xl cursor-pointer text-muted-foreground" asChild>
                 <Link href="/" onClick={async () => {

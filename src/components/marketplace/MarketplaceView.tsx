@@ -129,7 +129,9 @@ export function MarketplaceView({ templates, purchasedIds, userId, isPremium }: 
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-bold">Template Marketplace 🛍️</h1>
-        <p className="text-sm text-muted-foreground">Curated planning systems — tap a template to preview, then apply in one tap</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          Skip the blank page. Each template instantly adds a curated set of habits and tasks to your planner — so instead of starting from scratch, you just pick what fits your life and go.
+        </p>
       </div>
 
       {/* Search & filters */}
@@ -316,6 +318,11 @@ export function MarketplaceView({ templates, purchasedIds, userId, isPremium }: 
                     {unapplying === preview.id ? "Removing..." : "Remove this template"}
                   </Button>
                 </div>
+              ) : !userId ? (
+                <Button variant="gradient" className="w-full gap-2" onClick={() => window.location.href = "/signup"}>
+                  <Sparkles className="h-4 w-4" />
+                  Sign up free to apply this template
+                </Button>
               ) : preview.price_cents > 0 ? (
                 <Button variant="gradient" className="w-full gap-2" onClick={() => handleApply(preview)}>
                   <Lock className="h-4 w-4" />

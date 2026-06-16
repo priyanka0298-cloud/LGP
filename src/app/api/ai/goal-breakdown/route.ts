@@ -8,7 +8,7 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { goalId, title, why, timeHorizon } = await request.json();
+  const { goalId, title, why, timeHorizon, targetDate, extraDetail } = await request.json();
 
   let openai;
   try {
@@ -17,11 +17,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "AI unavailable" }, { status: 503 });
   }
 
-  const userMessage = `Goal: "${title}"
-Why this matters to me: "${why || "not specified"}"
-Time horizon: ${timeHorizon || "monthly"}
+  const deadlineStr = targetDate
+    ? `Deadline: ${new Date(targetDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`
+    : null;
 
-Break this down into small, manageable steps I can actually follow through on.`;
+  const userMessage = [
+    `Goal: "${title}"`,
+    why ? `Why this matters to me: "${why}"` : null,
+    `Time horizon: ${timeHorizon || "monthly"}`,
+    deadlineStr,
+    extraDetail ? `Additional context: ${extraDetail}` : null,
+    "",
+    "Break this down into small, realistic steps I can actually follow through on.",
+  ].filter(Boolean).join("\n");
 
   const completion = await openai.chat.completions.create({
     model: AI_MODEL,

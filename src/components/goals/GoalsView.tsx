@@ -32,13 +32,6 @@ const HORIZONS = [
   { value: "long_term", label: "Long term" },
 ];
 
-const STATUS_COLORS: Record<string, string> = {
-  active: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-  paused: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  achieved: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-  released: "bg-muted text-muted-foreground",
-};
-
 export function GoalsView({ userId, initialGoals }: { userId: string; initialGoals: Goal[] }) {
   const [goals, setGoals] = useState<Goal[]>(initialGoals);
   const [showForm, setShowForm] = useState(false);
@@ -53,13 +46,26 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
   const [horizon, setHorizon] = useState("monthly");
   const [targetDate, setTargetDate] = useState("");
   const [saving, setSaving] = useState(false);
+  // AI detail step in the form
+  const [showAIDetail, setShowAIDetail] = useState(false);
+  const [aiDetail, setAiDetail] = useState("");
 
-  async function createGoal(useAI: boolean) {
+  function resetForm() {
+    setTitle("");
+    setWhy("");
+    setCategory("personal");
+    setHorizon("monthly");
+    setTargetDate("");
+    setShowAIDetail(false);
+    setAiDetail("");
+    setShowForm(false);
+  }
+
+  async function saveAndGenerateSteps() {
     if (!title.trim()) return;
     setSaving(true);
 
     const catEmoji = CATEGORIES.find(c => c.value === category)?.emoji ?? "✨";
-
     const { data, error } = await supabase
       .from("goals")
       .insert({ user_id: userId, title: title.trim(), why: why.trim() || null, category, time_horizon: horizon, emoji: catEmoji, target_date: targetDate || null })
@@ -73,30 +79,54 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
     }
 
     setGoals(prev => [data, ...prev]);
-    setTitle("");
-    setWhy("");
-    setCategory("personal");
-    setHorizon("monthly");
-    setTargetDate("");
-    setShowForm(false);
+    resetForm();
     setSaving(false);
     setExpandedId(data.id);
-
-    if (useAI) breakdownGoal(data);
+    breakdownGoal(data, aiDetail);
   }
 
-  async function breakdownGoal(goal: Goal) {
+  async function saveManual() {
+    if (!title.trim()) return;
+    setSaving(true);
+
+    const catEmoji = CATEGORIES.find(c => c.value === category)?.emoji ?? "✨";
+    const { data, error } = await supabase
+      .from("goals")
+      .insert({ user_id: userId, title: title.trim(), why: why.trim() || null, category, time_horizon: horizon, emoji: catEmoji, target_date: targetDate || null })
+      .select()
+      .single();
+
+    if (error || !data) {
+      toast.error("Couldn't save goal. Try again?");
+      setSaving(false);
+      return;
+    }
+
+    setGoals(prev => [data, ...prev]);
+    resetForm();
+    setSaving(false);
+    setExpandedId(data.id);
+  }
+
+  async function breakdownGoal(goal: Goal, extraDetail = "") {
     setLoadingAI(goal.id);
     try {
       const res = await fetch("/api/ai/goal-breakdown", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ goalId: goal.id, title: goal.title, why: goal.why, timeHorizon: goal.time_horizon }),
+        body: JSON.stringify({
+          goalId: goal.id,
+          title: goal.title,
+          why: goal.why,
+          timeHorizon: goal.time_horizon,
+          targetDate: goal.target_date,
+          extraDetail: extraDetail.trim() || undefined,
+        }),
       });
       const data = await res.json();
       if (data.steps) {
         setGoals(prev => prev.map(g => g.id === goal.id ? { ...g, ai_steps: data.steps, description: data.reframed_goal ?? g.description } : g));
-        toast.success("AI broke down your goal into steps ✨");
+        toast.success("Your steps are ready ✨");
       }
     } catch {
       toast.error("Couldn't generate steps. You can add them manually.");
@@ -116,7 +146,6 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
     const updated = steps.map((s, i) => i === idx ? { ...s, done: !s.done } : s);
     const doneCount = updated.filter(s => s.done).length;
     const progress = steps.length > 0 ? Math.round((doneCount / steps.length) * 100) : 0;
-
     setGoals(prev => prev.map(g => g.id === goal.id ? { ...g, ai_steps: updated, progress_percent: progress } : g));
     await supabase.from("goals").update({ ai_steps: updated, progress_percent: progress }).eq("id", goal.id);
   }
@@ -167,98 +196,125 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
             <Card className="border-primary/20 shadow-soft">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Target className="h-4 w-4 text-primary" /> What do you want to achieve?
+                  <Target className="h-4 w-4 text-primary" />
+                  {showAIDetail ? "A little more detail..." : "What do you want to achieve?"}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <input
-                  autoFocus
-                  placeholder="e.g. Launch my Etsy shop, Run a 5K, Read 12 books..."
-                  value={title}
-                  onChange={e => setTitle(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && createGoal(true)}
-                  className="w-full rounded-xl border border-input bg-muted/30 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                />
-                <textarea
-                  placeholder="Why does this matter to you? (optional)"
-                  value={why}
-                  onChange={e => setWhy(e.target.value)}
-                  rows={2}
-                  className="w-full rounded-xl border border-input bg-muted/30 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none"
-                />
-                <div className="flex gap-2 flex-wrap">
-                  {CATEGORIES.map(c => (
-                    <button
-                      key={c.value}
-                      onClick={() => setCategory(c.value)}
-                      className={cn(
-                        "rounded-full px-3 py-1 text-xs font-medium border transition-all",
-                        category === c.value
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-muted border-border text-muted-foreground hover:border-primary/50"
-                      )}
-                    >
-                      {c.emoji} {c.label}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex gap-2 flex-wrap">
-                  {HORIZONS.map(h => (
-                    <button
-                      key={h.value}
-                      onClick={() => setHorizon(h.value)}
-                      className={cn(
-                        "rounded-full px-3 py-1 text-xs font-medium border transition-all",
-                        horizon === h.value
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-muted border-border text-muted-foreground hover:border-primary/50"
-                      )}
-                    >
-                      {h.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Optional deadline */}
-                <div className="flex items-center gap-2">
-                  <CalendarDays className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <input
-                    type="date"
-                    value={targetDate}
-                    onChange={e => setTargetDate(e.target.value)}
-                    min={new Date().toISOString().split("T")[0]}
-                    className="rounded-xl border border-input bg-muted/30 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary text-muted-foreground [&:not([value=''])]:text-foreground"
-                  />
-                  <span className="text-xs text-muted-foreground">Deadline (optional)</span>
-                </div>
-
-                {/* Two save options */}
-                <div className="pt-1 space-y-2">
-                  <p className="text-xs text-muted-foreground">How do you want to build out your steps?</p>
-                  <div className="flex gap-2 flex-wrap">
-                    <Button
-                      variant="gradient"
-                      size="sm"
-                      onClick={() => createGoal(true)}
-                      disabled={saving || !title.trim()}
-                      className="gap-1.5"
-                    >
-                      <Sparkles className="h-3.5 w-3.5" />
-                      {saving ? "Saving..." : "Let AI plan it"}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => createGoal(false)}
-                      disabled={saving || !title.trim()}
-                      className="gap-1.5"
-                    >
-                      <PenLine className="h-3.5 w-3.5" />
-                      {saving ? "Saving..." : "I'll add steps myself"}
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => setShowForm(false)}>Cancel</Button>
-                  </div>
-                </div>
+                {!showAIDetail ? (
+                  <>
+                    <input
+                      autoFocus
+                      placeholder="e.g. Launch my Etsy shop, Run a 5K, Read 12 books..."
+                      value={title}
+                      onChange={e => setTitle(e.target.value)}
+                      className="w-full rounded-xl border border-input bg-muted/30 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
+                    <textarea
+                      placeholder="Why does this matter to you? (optional)"
+                      value={why}
+                      onChange={e => setWhy(e.target.value)}
+                      rows={2}
+                      className="w-full rounded-xl border border-input bg-muted/30 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                    />
+                    <div className="flex gap-2 flex-wrap">
+                      {CATEGORIES.map(c => (
+                        <button
+                          key={c.value}
+                          onClick={() => setCategory(c.value)}
+                          className={cn(
+                            "rounded-full px-3 py-1 text-xs font-medium border transition-all",
+                            category === c.value
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-muted border-border text-muted-foreground hover:border-primary/50"
+                          )}
+                        >
+                          {c.emoji} {c.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                      {HORIZONS.map(h => (
+                        <button
+                          key={h.value}
+                          onClick={() => setHorizon(h.value)}
+                          className={cn(
+                            "rounded-full px-3 py-1 text-xs font-medium border transition-all",
+                            horizon === h.value
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-muted border-border text-muted-foreground hover:border-primary/50"
+                          )}
+                        >
+                          {h.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CalendarDays className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <input
+                        type="date"
+                        value={targetDate}
+                        onChange={e => setTargetDate(e.target.value)}
+                        min={new Date().toISOString().split("T")[0]}
+                        className="rounded-xl border border-input bg-muted/30 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary text-muted-foreground [&:not([value=''])]:text-foreground"
+                      />
+                      <span className="text-xs text-muted-foreground">Deadline (optional)</span>
+                    </div>
+                    <div className="pt-1 space-y-2">
+                      <p className="text-xs text-muted-foreground">How do you want to build out your steps?</p>
+                      <div className="flex gap-2 flex-wrap">
+                        <Button
+                          variant="gradient"
+                          size="sm"
+                          onClick={() => setShowAIDetail(true)}
+                          disabled={!title.trim()}
+                          className="gap-1.5"
+                        >
+                          <Sparkles className="h-3.5 w-3.5" />
+                          Generate my steps
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={saveManual}
+                          disabled={saving || !title.trim()}
+                          className="gap-1.5"
+                        >
+                          <PenLine className="h-3.5 w-3.5" />
+                          {saving ? "Saving..." : "I'll add steps myself"}
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={resetForm}>Cancel</Button>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xs text-muted-foreground">
+                      The more context you give, the more accurate your steps will be.
+                    </p>
+                    <textarea
+                      autoFocus
+                      placeholder={`e.g. I have about 30 minutes a day, mostly evenings. I work full time and want to take this slowly without burning out.${targetDate ? ` My deadline is ${new Date(targetDate).toLocaleDateString("en-US", { month: "long", day: "numeric" })}.` : ""}`}
+                      value={aiDetail}
+                      onChange={e => setAiDetail(e.target.value)}
+                      rows={4}
+                      className="w-full rounded-xl border border-input bg-muted/30 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        variant="gradient"
+                        size="sm"
+                        onClick={saveAndGenerateSteps}
+                        disabled={saving}
+                        className="gap-1.5"
+                      >
+                        <Sparkles className="h-3.5 w-3.5" />
+                        {saving ? "Generating..." : "Generate my steps"}
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => setShowAIDetail(false)}>Back</Button>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           </motion.div>
@@ -290,7 +346,7 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
               loadingAI={loadingAI === goal.id}
               onToggleExpand={() => setExpandedId(expandedId === goal.id ? null : goal.id)}
               onToggleStep={idx => toggleStep(goal, idx)}
-              onBreakdown={() => breakdownGoal(goal)}
+              onBreakdown={detail => breakdownGoal(goal, detail)}
               onAddStep={stepTitle => addManualStep(goal, stepTitle)}
               onAchieve={() => markAchieved(goal)}
               onDelete={() => deleteGoal(goal.id)}
@@ -338,7 +394,7 @@ function GoalCard({
   loadingAI: boolean;
   onToggleExpand: () => void;
   onToggleStep: (idx: number) => void;
-  onBreakdown: () => void;
+  onBreakdown: (detail: string) => void;
   onAddStep: (title: string) => void;
   onAchieve: () => void;
   onDelete: () => void;
@@ -351,11 +407,19 @@ function GoalCard({
 
   const [newStep, setNewStep] = useState("");
   const [showStepInput, setShowStepInput] = useState(false);
+  const [showAIDetail, setShowAIDetail] = useState(false);
+  const [aiDetail, setAiDetail] = useState("");
 
   function submitStep() {
     if (!newStep.trim()) return;
     onAddStep(newStep);
     setNewStep("");
+  }
+
+  function submitAI() {
+    onBreakdown(aiDetail);
+    setShowAIDetail(false);
+    setAiDetail("");
   }
 
   return (
@@ -372,10 +436,7 @@ function GoalCard({
         <CardContent className="p-4">
           {/* Main row */}
           <div className="flex items-start gap-3">
-            <button
-              onClick={onToggleExpand}
-              className="flex-1 flex items-start gap-3 text-left"
-            >
+            <button onClick={onToggleExpand} className="flex-1 flex items-start gap-3 text-left">
               <span className="text-2xl mt-0.5 shrink-0">{goal.emoji ?? "✨"}</span>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -407,7 +468,6 @@ function GoalCard({
               </div>
             </button>
 
-            {/* Actions */}
             <div className="flex items-center gap-1 shrink-0 ml-1">
               <button onClick={onPin} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-primary transition-colors">
                 <Pin className="h-3.5 w-3.5" />
@@ -438,7 +498,7 @@ function GoalCard({
                   {loadingAI && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground py-3">
                       <Sparkles className="h-4 w-4 animate-pulse text-primary" />
-                      Breaking this down for you...
+                      Building your steps...
                     </div>
                   )}
 
@@ -454,9 +514,7 @@ function GoalCard({
                         >
                           <div className={cn(
                             "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-all",
-                            step.done
-                              ? "bg-primary border-primary"
-                              : "border-border group-hover:border-primary/60"
+                            step.done ? "bg-primary border-primary" : "border-border group-hover:border-primary/60"
                           )}>
                             {step.done && <Check className="h-2.5 w-2.5 text-white" />}
                           </div>
@@ -468,28 +526,47 @@ function GoalCard({
                     </div>
                   )}
 
-                  {/* No steps yet — show both options */}
+                  {/* No steps — AI detail prompt or option buttons */}
                   {steps.length === 0 && !loadingAI && !isAchieved && (
-                    <div className="space-y-2">
-                      <div className="flex gap-2 flex-wrap">
-                        <Button variant="soft" size="sm" className="gap-1.5" onClick={onBreakdown}>
-                          <Sparkles className="h-3.5 w-3.5" />
-                          Let AI plan it
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="gap-1.5"
-                          onClick={() => setShowStepInput(true)}
-                        >
-                          <PenLine className="h-3.5 w-3.5" />
-                          Add steps myself
-                        </Button>
-                      </div>
-                    </div>
+                    <>
+                      {showAIDetail ? (
+                        <div className="space-y-2 rounded-xl bg-muted/40 border border-border/50 p-3">
+                          <p className="text-xs text-muted-foreground">
+                            Tell us a bit more — your schedule, how much time you have, any constraints. The more detail, the better your steps.
+                          </p>
+                          <textarea
+                            autoFocus
+                            placeholder={`e.g. I have 20 mins a day, weekday evenings only. I want to take this slowly.${goal.target_date ? ` Deadline: ${new Date(goal.target_date).toLocaleDateString("en-US", { month: "long", day: "numeric" })}.` : ""}`}
+                            value={aiDetail}
+                            onChange={e => setAiDetail(e.target.value)}
+                            rows={3}
+                            className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                          />
+                          <div className="flex gap-2">
+                            <Button variant="gradient" size="sm" className="gap-1.5" onClick={submitAI}>
+                              <Sparkles className="h-3.5 w-3.5" /> Generate my steps
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => { setShowAIDetail(false); setAiDetail(""); }}>
+                              Back
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2 flex-wrap">
+                          <Button variant="soft" size="sm" className="gap-1.5" onClick={() => setShowAIDetail(true)}>
+                            <Sparkles className="h-3.5 w-3.5" />
+                            Generate my steps
+                          </Button>
+                          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowStepInput(true)}>
+                            <PenLine className="h-3.5 w-3.5" />
+                            Add steps myself
+                          </Button>
+                        </div>
+                      )}
+                    </>
                   )}
 
-                  {/* Manual step input — shown when steps exist or user clicked "Add myself" */}
+                  {/* Manual step input */}
                   {!isAchieved && (steps.length > 0 || showStepInput) && !loadingAI && (
                     <div className="flex gap-2">
                       <input
@@ -503,9 +580,7 @@ function GoalCard({
                         }}
                         className="flex-1 rounded-xl border border-input bg-muted/30 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                       />
-                      <Button size="sm" variant="soft" onClick={submitStep} disabled={!newStep.trim()}>
-                        Add
-                      </Button>
+                      <Button size="sm" variant="soft" onClick={submitStep} disabled={!newStep.trim()}>Add</Button>
                     </div>
                   )}
 

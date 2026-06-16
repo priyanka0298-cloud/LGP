@@ -246,16 +246,19 @@ export function MarketplaceView({ templates, purchasedIds, userId, isPremium }: 
               <p className="text-sm text-muted-foreground mb-5">{preview.description}</p>
 
               {/* What's included */}
-              {TEMPLATE_CONFIGS[preview.title] && (
+              {(() => {
+                const cfg = TEMPLATE_CONFIGS[preview.title];
+                if (!cfg) return null;
+                return (
                 <div className="space-y-4 mb-5">
-                  {TEMPLATE_CONFIGS[preview.title].habits?.length > 0 && (
+                  {(cfg.habits?.length ?? 0) > 0 && (
                     <div>
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
                         <Repeat2 className="h-3.5 w-3.5" />
-                        Habits added ({TEMPLATE_CONFIGS[preview.title].habits.length})
+                        Habits added ({cfg.habits?.length})
                       </p>
                       <div className="space-y-1.5">
-                        {TEMPLATE_CONFIGS[preview.title].habits.map((h, i) => (
+                        {(cfg.habits ?? []).map((h, i) => (
                           <div key={i} className="flex items-center gap-2 rounded-xl bg-muted/50 px-3 py-2 text-sm">
                             <span>{h.emoji ?? "🌸"}</span>
                             <span>{h.name}</span>
@@ -266,14 +269,14 @@ export function MarketplaceView({ templates, purchasedIds, userId, isPremium }: 
                     </div>
                   )}
 
-                  {TEMPLATE_CONFIGS[preview.title].tasks?.length > 0 && (
+                  {(cfg.tasks?.length ?? 0) > 0 && (
                     <div>
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
                         <ListChecks className="h-3.5 w-3.5" />
-                        Tasks added ({TEMPLATE_CONFIGS[preview.title].tasks.length})
+                        Tasks added ({cfg.tasks?.length})
                       </p>
                       <div className="space-y-1.5">
-                        {TEMPLATE_CONFIGS[preview.title].tasks.map((t, i) => (
+                        {(cfg.tasks ?? []).map((t, i) => (
                           <div key={i} className="flex items-center gap-2 rounded-xl bg-muted/50 px-3 py-2 text-sm">
                             <span>{t.emoji ?? "✅"}</span>
                             <span>{t.title}</span>
@@ -283,7 +286,8 @@ export function MarketplaceView({ templates, purchasedIds, userId, isPremium }: 
                     </div>
                   )}
                 </div>
-              )}
+                );
+              })()}
 
               {/* Tags */}
               {preview.tags?.length > 0 && (
@@ -410,14 +414,14 @@ function TemplateCard({
         {/* What's inside preview */}
         {config && (
           <div className="flex gap-3 text-xs text-muted-foreground mb-3">
-            {config.habits?.length > 0 && (
+            {(config.habits?.length ?? 0) > 0 && (
               <span className="flex items-center gap-1">
-                <Repeat2 className="h-3 w-3" /> {config.habits.length} habits
+                <Repeat2 className="h-3 w-3" /> {config.habits?.length} habits
               </span>
             )}
-            {config.tasks?.length > 0 && (
+            {(config.tasks?.length ?? 0) > 0 && (
               <span className="flex items-center gap-1">
-                <ListChecks className="h-3 w-3" /> {config.tasks.length} tasks
+                <ListChecks className="h-3 w-3" /> {config.tasks?.length} tasks
               </span>
             )}
           </div>

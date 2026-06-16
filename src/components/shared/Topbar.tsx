@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
+import { useRouter } from "next/navigation";
 import { Sun, Moon, Bell, Search, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -24,6 +25,7 @@ interface TopbarProps {
 export function Topbar({ profile }: TopbarProps) {
   const { theme, setTheme } = useTheme();
   const [cmdOpen, setCmdOpen] = useState(false);
+  const router = useRouter();
   const greeting = getDayGreeting();
   const displayName = profile?.display_name ?? profile?.full_name ?? "you";
 
@@ -62,10 +64,8 @@ export function Topbar({ profile }: TopbarProps) {
           </Button>
 
           {/* Notifications — goes to Reminders */}
-          <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-xl" aria-label="Reminders" asChild>
-            <Link href="/reminders">
-              <Bell className="h-4 w-4" />
-            </Link>
+          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" aria-label="Reminders" onClick={() => router.push("/reminders")}>
+            <Bell className="h-4 w-4" />
           </Button>
 
           {/* Theme toggle */}

@@ -34,6 +34,7 @@ export function MarketplaceView({ templates, purchasedIds, userId, isPremium }: 
   const [activeCategory, setActiveCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [applying, setApplying] = useState<string | null>(null);
+  const [unapplying, setUnapplying] = useState<string | null>(null);
   const [applied, setApplied] = useState<Set<string>>(new Set(purchasedIds));
   const [preview, setPreview] = useState<PlannerTemplate | null>(null);
   const router = useRouter();
@@ -93,6 +94,34 @@ export function MarketplaceView({ templates, purchasedIds, userId, isPremium }: 
       toast.error("Couldn't apply the template. Try again 🌸");
     } finally {
       setApplying(null);
+    }
+  }
+
+  async function handleUnapply(template: PlannerTemplate) {
+    setUnapplying(template.id);
+    try {
+      const res = await fetch("/api/templates/unapply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ templateId: template.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Something went wrong 🌸");
+        return;
+      }
+      setApplied((prev) => {
+        const next = new Set(prev);
+        next.delete(template.id);
+        return next;
+      });
+      toast.success(data.message, { duration: 5000 });
+      setPreview(null);
+      router.refresh();
+    } catch {
+      toast.error("Couldn't remove the template. Try again 🌸");
+    } finally {
+      setUnapplying(null);
     }
   }
 
@@ -267,12 +296,22 @@ export function MarketplaceView({ templates, purchasedIds, userId, isPremium }: 
                 </div>
               )}
 
-              {/* Apply button */}
+              {/* Apply / Unapply buttons */}
               {applied.has(preview.id) ? (
-                <Button variant="outline" className="w-full gap-2" disabled>
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                  Already applied to your planner
-                </Button>
+                <div className="space-y-2">
+                  <Button variant="outline" className="w-full gap-2" disabled>
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                    Applied to your planner
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="w-full gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={() => handleUnapply(preview)}
+                    disabled={unapplying === preview.id}
+                  >
+                    {unapplying === preview.id ? "Removing..." : "Remove this template"}
+                  </Button>
+                </div>
               ) : preview.price_cents > 0 ? (
                 <Button variant="gradient" className="w-full gap-2" onClick={() => handleApply(preview)}>
                   <Lock className="h-4 w-4" />

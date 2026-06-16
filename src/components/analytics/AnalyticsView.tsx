@@ -186,12 +186,13 @@ export function AnalyticsView({ moods, tasks, habits, completions }: AnalyticsVi
                 ))}
               </div>
 
-              {/* Mood grid */}
+              {/* Mood grid — energy shown as a bar at the bottom of each cell */}
               <div className="grid grid-cols-7 gap-1">
                 {gridDays.map((day) => {
                   const dateStr = format(day, "yyyy-MM-dd");
                   const mood = moodByDate[dateStr];
                   const score = mood?.mood_score ?? null;
+                  const energy = mood?.energy_level ?? null;
                   const meta = score ? MOOD_META[score] : null;
                   const future = isFuture(day) && !isToday(day);
                   const isHovered = hoveredDay === dateStr;
@@ -205,7 +206,8 @@ export function AnalyticsView({ moods, tasks, habits, completions }: AnalyticsVi
                       disabled={future}
                       title={format(day, "MMM d")}
                       className={cn(
-                        "aspect-square rounded-xl flex items-center justify-center text-base transition-all",
+                        "relative rounded-xl flex flex-col items-center justify-center pt-1.5 pb-1 gap-0.5 transition-all overflow-hidden",
+                        "aspect-square",
                         future && "opacity-20 cursor-default",
                         !future && !meta && "bg-muted/50 hover:bg-muted",
                         meta && meta.bg,
@@ -214,7 +216,12 @@ export function AnalyticsView({ moods, tasks, habits, completions }: AnalyticsVi
                         isToday(day) && !meta && "ring-2 ring-primary/50"
                       )}
                     >
-                      {meta ? meta.emoji : (isToday(day) ? "·" : "")}
+                      <span className="text-base leading-none">{meta ? meta.emoji : (isToday(day) ? "·" : "")}</span>
+                      {/* Energy bar at the bottom */}
+                      {energy && (
+                        <div className="absolute bottom-0 left-0 h-1 bg-sky-400/70 dark:bg-sky-400/50 rounded-b-xl transition-all"
+                          style={{ width: `${(energy / 5) * 100}%` }} />
+                      )}
                     </button>
                   );
                 })}
@@ -243,39 +250,8 @@ export function AnalyticsView({ moods, tasks, habits, completions }: AnalyticsVi
                 </div>
               )}
 
-              {/* Energy strip */}
-              {moodsWithEnergy.length > 0 && (
-                <div>
-                  <p className="text-xs text-muted-foreground mb-2">⚡ Energy level by day</p>
-                  <div className="grid grid-cols-7 gap-1">
-                    {gridDays.map((day) => {
-                      const dateStr = format(day, "yyyy-MM-dd");
-                      const mood = moodByDate[dateStr];
-                      const energy = mood?.energy_level ?? null;
-                      const future = isFuture(day) && !isToday(day);
-                      return (
-                        <div
-                          key={dateStr}
-                          className={cn("h-3 rounded-full transition-all", future ? "opacity-20" : energy ? ENERGY_COLOR[energy] : "bg-muted/40")}
-                          title={energy ? `${format(day, "MMM d")}: energy ${energy}/5` : undefined}
-                        />
-                      );
-                    })}
-                  </div>
-                  <div className="flex items-center gap-3 mt-2">
-                    <p className="text-xs text-muted-foreground">Low</p>
-                    <div className="flex gap-1">
-                      {[1,2,3,4,5].map((n) => (
-                        <div key={n} className={cn("h-2.5 w-5 rounded-full", ENERGY_COLOR[n])} />
-                      ))}
-                    </div>
-                    <p className="text-xs text-muted-foreground">High</p>
-                  </div>
-                </div>
-              )}
-
               {/* Mood legend */}
-              <div className="flex flex-wrap gap-2 pt-1">
+              <div className="flex flex-wrap gap-x-3 gap-y-1.5 pt-1">
                 {Object.entries(MOOD_META).map(([score, meta]) => (
                   <div key={score} className="flex items-center gap-1">
                     <span className="text-sm">{meta.emoji}</span>
@@ -283,6 +259,7 @@ export function AnalyticsView({ moods, tasks, habits, completions }: AnalyticsVi
                   </div>
                 ))}
               </div>
+              <p className="text-xs text-muted-foreground">⚡ The blue bar at the bottom of each cell shows your energy level that day</p>
             </CardContent>
           </Card>
 

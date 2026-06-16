@@ -197,6 +197,64 @@ export const TEMPLATE_CONFIGS: Record<string, TemplateConfig> = {
     welcome_message: "Your Vision Board Workbook is set! 3 habits and 4 tasks to help you get crystal clear on your dream life. ✨",
   },
 
+  "ADHD-Friendly Focus Planner": {
+    habits: [
+      { name: "Pick ONE task before opening my phone", emoji: "🎯", frequency: "daily", category: "mindset" },
+      { name: "Use a 25-min focus timer", emoji: "⏱️", frequency: "daily", category: "planning" },
+      { name: "Brain dump before bed", emoji: "🧠", frequency: "daily", category: "mindset" },
+      { name: "Celebrate completing a hard task", emoji: "🎉", frequency: "daily", category: "mindset" },
+    ],
+    tasks: [
+      { title: "Write out today's ONE most important task", category: "must_do", emoji: "⭐" },
+      { title: "Break that task into steps under 10 minutes each", category: "must_do", emoji: "🔀" },
+      { title: "Set up your workspace before starting (clear desk, water, headphones)", category: "should_do", emoji: "🎧" },
+    ],
+    welcome_message: "Your ADHD-Friendly Focus Planner is live! 4 daily habits to protect your focus and reduce overwhelm. You've got this. 🎯",
+  },
+
+  "Mindful Morning Routine": {
+    habits: [
+      { name: "5 minutes of silence before screens", emoji: "🌅", frequency: "daily", category: "mindset" },
+      { name: "Drink a full glass of water on waking", emoji: "💧", frequency: "daily", category: "wellness" },
+      { name: "Write 3 things I'm grateful for", emoji: "🙏", frequency: "daily", category: "mindset" },
+      { name: "Set my one intention for the day", emoji: "🌟", frequency: "daily", category: "mindset" },
+    ],
+    tasks: [
+      { title: "Design your ideal 20-minute morning flow", category: "must_do", emoji: "📝" },
+      { title: "Prep the night before (clothes, bag, breakfast)", category: "should_do", emoji: "🌙" },
+    ],
+    welcome_message: "Your Mindful Morning Routine is set! 4 habits to start each day from a place of calm instead of chaos. 🌅",
+  },
+
+  "Journal Prompts for Self-Discovery": {
+    habits: [
+      { name: "Journal for 10 minutes (no pressure)", emoji: "📓", frequency: "daily", category: "mindset" },
+      { name: "Re-read last week's entries on Sunday", emoji: "🔍", frequency: "weekly", category: "mindset" },
+    ],
+    tasks: [
+      { title: "Set up your journaling space (pen, notebook, or app)", category: "must_do", emoji: "✏️" },
+      { title: "Write about what you want your life to feel like in 1 year", category: "must_do", emoji: "🌈" },
+      { title: "Identify one belief about yourself you want to examine", category: "should_do", emoji: "🔎" },
+    ],
+    welcome_message: "Your Journal Prompts for Self-Discovery are ready! 2 habits and 3 starter tasks to begin your reflection journey. 📓",
+  },
+
+  "Habit Stacking Starter Kit": {
+    habits: [
+      { name: "After morning coffee → write today's 3 priorities", emoji: "☕", frequency: "daily", category: "planning" },
+      { name: "After lunch → take a 5-min walk", emoji: "🚶", frequency: "daily", category: "wellness" },
+      { name: "Before bed → lay out tomorrow's clothes", emoji: "👗", frequency: "daily", category: "self_care" },
+      { name: "After dinner → review what went well today", emoji: "✨", frequency: "daily", category: "mindset" },
+      { name: "On Sunday → plan the week ahead", emoji: "📅", frequency: "weekly", category: "planning" },
+    ],
+    tasks: [
+      { title: "Pick one existing habit to stack a new one onto", category: "must_do", emoji: "🔗" },
+      { title: "Write your habit stack: AFTER [existing habit] I will [new habit]", category: "must_do", emoji: "📝" },
+      { title: "Track your stack for 7 days and notice what sticks", category: "should_do", emoji: "📊" },
+    ],
+    welcome_message: "Your Habit Stacking Starter Kit is live! 5 habits and 3 tasks to build consistency the easy way. 🌿",
+  },
+
   "Soft Life Weekly Spread": {
     habits: [
       { name: "Sunday soft reset ritual", emoji: "🛁", frequency: "weekly", category: "self_care" },

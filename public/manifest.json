@@ -1,7 +1,7 @@
 {
-  "name": "Lazy Girl Planner",
-  "short_name": "LGP",
-  "description": "Gentle planning and wellness for ambitious women",
+  "name": "Softlivi",
+  "short_name": "Softlivi",
+  "description": "Gentle planning and soft living for ambitious women",
   "start_url": "/dashboard",
   "display": "standalone",
   "background_color": "#fff1f5",

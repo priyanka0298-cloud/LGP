@@ -19,8 +19,8 @@ const playfair = Playfair_Display({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
   title: {
-    default: "Lazy Girl Planner — Plan Softly, Live Fully",
-    template: "%s | Lazy Girl Planner",
+    default: "Softlivi — Live Softly. Plan Gently.",
+    template: "%s | Softlivi",
   },
   description:
     "A digital planning and wellness platform for overwhelmed, ambitious women. Gentle planning, habit tracking, journaling, and AI-powered productivity — without the guilt.",
@@ -36,14 +36,14 @@ export const metadata: Metadata = {
     "goal setting",
     "neurodivergent",
   ],
-  authors: [{ name: "Lazy Girl Planner" }],
-  creator: "Lazy Girl Planner",
+  authors: [{ name: "Softlivi" }],
+  creator: "Softlivi",
   openGraph: {
     type: "website",
     locale: "en_US",
     url: process.env.NEXT_PUBLIC_APP_URL,
-    siteName: "Lazy Girl Planner",
-    title: "Lazy Girl Planner — Plan Softly, Live Fully",
+    siteName: "Softlivi",
+    title: "Softlivi — Live Softly. Plan Gently.",
     description:
       "Gentle planning, habit tracking, and AI-powered wellness for ambitious women who are done with hustle culture.",
     images: [
@@ -51,13 +51,13 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Lazy Girl Planner",
+        alt: "Softlivi",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Lazy Girl Planner",
+    title: "Softlivi",
     description: "Plan softly. Live fully.",
     images: ["/og-image.png"],
   },
@@ -65,7 +65,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Lazy Girl Planner",
+    title: "Softlivi",
   },
   icons: {
     icon: [

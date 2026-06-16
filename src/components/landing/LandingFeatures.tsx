@@ -11,7 +11,7 @@ const FEATURES = [
   {
     icon: CalendarDays,
     title: "Weekly Planner",
-    description: "Plan your week with the Lazy Girl framework: Must Do, Should Do, and If I Have Energy — finally, a system that respects your limits.",
+    description: "Plan your week with the Softlivi method: Must Do, Should Do, and If I Have Energy — finally, a system that respects your limits.",
     gradient: "from-rose-400 to-pink-500",
     bg: "from-rose-50 to-pink-50 dark:from-rose-950/30 dark:to-pink-950/20",
   },

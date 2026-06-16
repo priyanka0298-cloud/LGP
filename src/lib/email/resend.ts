@@ -11,4 +11,4 @@ export function getResendClient(): Resend {
   return client;
 }
 
-export const FROM_EMAIL = process.env.RESEND_FROM_EMAIL ?? "Lazy Girl Planner <hello@lazy-girl-planner.com>";
+export const FROM_EMAIL = process.env.RESEND_FROM_EMAIL ?? "Softlivi <hello@softlivi.com>";

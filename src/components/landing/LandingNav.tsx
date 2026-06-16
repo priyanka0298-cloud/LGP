@@ -37,9 +37,8 @@ export function LandingNav() {
           </div>
           <div>
             <span className="font-display text-lg font-semibold leading-none block">
-              Lazy Girl
+              Softlivi
             </span>
-            <span className="text-xs text-muted-foreground leading-none">Planner</span>
           </div>
         </Link>
 

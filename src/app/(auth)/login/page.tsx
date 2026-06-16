@@ -92,7 +92,7 @@ function LoginContent() {
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-400 to-pink-500 shadow-glow">
               <Sparkles className="h-5 w-5 text-white" />
             </div>
-            <span className="font-display text-xl font-semibold">Lazy Girl Planner</span>
+            <span className="font-display text-xl font-semibold">Softlivi</span>
           </Link>
         </div>
 

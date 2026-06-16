@@ -2,7 +2,7 @@ import type { TemplateConfig } from "@/types";
 
 // Keyed by exact template title from the DB
 export const TEMPLATE_CONFIGS: Record<string, TemplateConfig> = {
-  "The Lazy Girl Weekly Reset": {
+  "The Softlivi Weekly Reset": {
     habits: [
       { name: "Weekly intention setting", emoji: "🌸", frequency: "weekly", category: "mindset" },
       { name: "Plan my week (15 min Sunday)", emoji: "📅", frequency: "weekly", category: "planning" },
@@ -14,7 +14,7 @@ export const TEMPLATE_CONFIGS: Record<string, TemplateConfig> = {
       { title: "Block off time for something I enjoy", category: "must_do", emoji: "🌈" },
       { title: "Clear my inbox + to-do pile (no pressure, just a look)", category: "should_do", emoji: "📬" },
     ],
-    welcome_message: "Your Lazy Girl Weekly Reset is live! 4 weekly habits and 3 gentle tasks added. Take it one step at a time. 🌸",
+    welcome_message: "Your Softlivi Weekly Reset is live! 4 weekly habits and 3 gentle tasks added. Take it one step at a time. 🌸",
   },
 
   "Daily Soft Life Planner": {

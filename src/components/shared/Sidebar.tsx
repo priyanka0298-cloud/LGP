@@ -103,8 +103,7 @@ export function Sidebar() {
               transition={{ duration: 0.2 }}
               className="overflow-hidden whitespace-nowrap"
             >
-              <p className="font-display text-sm font-semibold leading-tight">Lazy Girl</p>
-              <p className="font-display text-sm font-semibold leading-tight text-muted-foreground">Planner</p>
+              <p className="font-display text-sm font-semibold leading-tight">Softlivi</p>
             </motion.div>
           )}
         </AnimatePresence>

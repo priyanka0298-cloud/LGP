@@ -27,7 +27,7 @@ export function weeklyCheckinEmail({ name, appUrl }: { name: string; appUrl: str
           <tr>
             <td style="padding-bottom:24px;text-align:center;">
               <span style="font-size:28px;">🌿</span>
-              <p style="margin:8px 0 0;font-size:13px;color:#be185d;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;">Lazy Girl Planner</p>
+              <p style="margin:8px 0 0;font-size:13px;color:#be185d;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;">Softlivi</p>
             </td>
           </tr>
 
@@ -85,7 +85,7 @@ export function weeklyCheckinEmail({ name, appUrl }: { name: string; appUrl: str
           <tr>
             <td style="padding:24px 0 0;text-align:center;">
               <p style="margin:0 0 8px;font-size:12px;color:#a8a29e;">
-                You're receiving this because you set up weekly check-ins in Lazy Girl Planner.
+                You're receiving this because you set up weekly check-ins in Softlivi.
               </p>
               <p style="margin:0;font-size:12px;color:#a8a29e;">
                 <a href="${appUrl}/settings" style="color:#f43f5e;text-decoration:none;">Change notification settings</a>

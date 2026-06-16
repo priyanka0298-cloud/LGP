@@ -26,7 +26,7 @@ export default async function AnalyticsPage() {
       .order("date"),
     supabase
       .from("tasks")
-      .select("scheduled_date, status, category")
+      .select("scheduled_date, status, category, title, emoji, completed_at")
       .eq("user_id", user.id)
       .gte("scheduled_date", thirtyDaysAgo),
     supabase

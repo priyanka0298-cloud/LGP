@@ -1,28 +1,43 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer,
-} from "recharts";
-import { format, parseISO, subDays } from "date-fns";
-import { TrendingUp, Heart, Flame, Target, AlertTriangle, Sparkles, Calendar } from "lucide-react";
+import { format, parseISO, subDays, startOfWeek, addDays, isToday, isFuture } from "date-fns";
+import { Heart, Flame, Target, AlertTriangle, Sparkles, CheckCircle2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { TASK_CATEGORY_CONFIG } from "@/types";
 
-const MOOD_LABELS: Record<number, { emoji: string; label: string; color: string }> = {
-  1: { emoji: "😞", label: "Really rough", color: "text-red-500" },
-  2: { emoji: "😕", label: "Struggling", color: "text-orange-500" },
-  3: { emoji: "😐", label: "Meh", color: "text-yellow-500" },
-  4: { emoji: "🙂", label: "Okay", color: "text-lime-500" },
-  5: { emoji: "😊", label: "Good", color: "text-green-500" },
-  6: { emoji: "😄", label: "Great", color: "text-teal-500" },
-  7: { emoji: "🌟", label: "Amazing", color: "text-purple-500" },
+const MOOD_META: Record<number, { emoji: string; label: string; bg: string; ring: string }> = {
+  1: { emoji: "😞", label: "Really rough", bg: "bg-red-100 dark:bg-red-950/60",    ring: "ring-red-300 dark:ring-red-700" },
+  2: { emoji: "😕", label: "Struggling",   bg: "bg-orange-100 dark:bg-orange-950/60", ring: "ring-orange-300 dark:ring-orange-700" },
+  3: { emoji: "😐", label: "Meh",          bg: "bg-yellow-100 dark:bg-yellow-950/60", ring: "ring-yellow-300 dark:ring-yellow-600" },
+  4: { emoji: "🙂", label: "Okay",         bg: "bg-lime-100 dark:bg-lime-950/60",   ring: "ring-lime-300 dark:ring-lime-600" },
+  5: { emoji: "😊", label: "Good",         bg: "bg-green-100 dark:bg-green-950/60", ring: "ring-green-300 dark:ring-green-600" },
+  6: { emoji: "😄", label: "Great",        bg: "bg-teal-100 dark:bg-teal-950/60",   ring: "ring-teal-300 dark:ring-teal-600" },
+  7: { emoji: "🌟", label: "Amazing",      bg: "bg-violet-100 dark:bg-violet-950/60", ring: "ring-violet-300 dark:ring-violet-600" },
 };
+
+const ENERGY_COLOR = [
+  "",
+  "bg-sky-200 dark:bg-sky-800",
+  "bg-sky-300 dark:bg-sky-700",
+  "bg-sky-400 dark:bg-sky-600",
+  "bg-sky-500",
+  "bg-sky-600",
+];
+
+function taskDotColor(count: number) {
+  if (count === 0) return "bg-muted";
+  if (count === 1) return "bg-emerald-200 dark:bg-emerald-800";
+  if (count <= 3) return "bg-emerald-400 dark:bg-emerald-600";
+  return "bg-emerald-600 dark:bg-emerald-400";
+}
+
+const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 interface AnalyticsViewProps {
   moods: Array<{ date: string; mood_score: number | null; energy_level: number | null; mood_label: string | null; note?: string | null }>;
-  tasks: Array<{ scheduled_date: string | null; status: string; category: string }>;
+  tasks: Array<{ scheduled_date: string | null; status: string; category: string; title?: string | null; emoji?: string | null; completed_at?: string | null }>;
   habits: Array<{ id: string; name: string; emoji: string | null; streak_current: number; streak_longest: number; total_completions: number }>;
   completions: Array<{ habit_id: string; completed_date: string }>;
 }
@@ -31,67 +46,93 @@ type Tab = "trends" | "mood-log";
 
 export function AnalyticsView({ moods, tasks, habits, completions }: AnalyticsViewProps) {
   const [tab, setTab] = useState<Tab>("trends");
+  const [hoveredDay, setHoveredDay] = useState<string | null>(null);
 
-  // Build 30-day chart data
-  const chartData = Array.from({ length: 30 }, (_, i) => {
-    const date = subDays(new Date(), 29 - i);
-    const dateStr = format(date, "yyyy-MM-dd");
-    const mood = moods.find((m) => m.date === dateStr);
-    const dayTasks = tasks.filter((t) => t.scheduled_date === dateStr);
-    const doneTasks = dayTasks.filter((t) => t.status === "done");
-    const dayCompletions = completions.filter((c) => c.completed_date === dateStr);
-    const habitRate = habits.length ? Math.round((dayCompletions.length / habits.length) * 100) : 0;
+  // Build a 5-week grid (35 cells) starting from Monday of ~5 weeks ago
+  const gridStart = startOfWeek(subDays(new Date(), 34), { weekStartsOn: 1 });
+  const gridDays = Array.from({ length: 35 }, (_, i) => addDays(gridStart, i));
 
-    return {
-      date: format(date, "MMM d"),
-      fullDate: dateStr,
-      mood: mood?.mood_score ?? null,
-      energy: mood?.energy_level ?? null,
-      taskCompletion: dayTasks.length ? Math.round((doneTasks.length / dayTasks.length) * 100) : null,
-      habitsCompleted: dayCompletions.length,
-      habitRate,
-    };
+  // Index mood & task data by date string
+  const moodByDate: Record<string, typeof moods[0]> = {};
+  moods.forEach((m) => { moodByDate[m.date] = m; });
+
+  const tasksByDate: Record<string, typeof tasks> = {};
+  tasks.forEach((t) => {
+    if (!t.scheduled_date) return;
+    tasksByDate[t.scheduled_date] ??= [];
+    tasksByDate[t.scheduled_date].push(t);
   });
 
-  const avgMood = moods.filter((m) => m.mood_score).reduce((a, b) => a + (b.mood_score ?? 0), 0) / (moods.filter((m) => m.mood_score).length || 1);
-  const avgEnergy = moods.filter((m) => m.energy_level).reduce((a, b) => a + (b.energy_level ?? 0), 0) / (moods.filter((m) => m.energy_level).length || 1);
-  const totalDone = tasks.filter((t) => t.status === "done").length;
-  const totalTasks = tasks.length;
-  const overallCompletion = totalTasks ? Math.round((totalDone / totalTasks) * 100) : 0;
+  // Stats
+  const moodsWithScore = moods.filter((m) => m.mood_score);
+  const avgMood = moodsWithScore.length
+    ? moodsWithScore.reduce((a, b) => a + (b.mood_score ?? 0), 0) / moodsWithScore.length
+    : 0;
+  const moodsWithEnergy = moods.filter((m) => m.energy_level);
+  const avgEnergy = moodsWithEnergy.length
+    ? moodsWithEnergy.reduce((a, b) => a + (b.energy_level ?? 0), 0) / moodsWithEnergy.length
+    : 0;
+  const doneTasks = tasks.filter((t) => t.status === "done");
+  const overallCompletion = tasks.length ? Math.round((doneTasks.length / tasks.length) * 100) : 0;
   const topStreak = Math.max(...habits.map((h) => h.streak_current), 0);
 
-  const recentData = chartData.slice(-7);
-  const lowMoodDays = recentData.filter((d) => d.mood !== null && d.mood <= 3).length;
-  const lowCompletionDays = recentData.filter((d) => d.taskCompletion !== null && d.taskCompletion < 30).length;
-  const burnoutRisk = lowMoodDays >= 3 && lowCompletionDays >= 3;
+  // Burnout check — last 7 days
+  const recent7 = Array.from({ length: 7 }, (_, i) => format(subDays(new Date(), i), "yyyy-MM-dd"));
+  const lowMoodDays = recent7.filter((d) => { const m = moodByDate[d]; return m && (m.mood_score ?? 10) <= 3; }).length;
+  const lowTaskDays = recent7.filter((d) => {
+    const day = tasksByDate[d] ?? [];
+    return day.length > 0 && day.filter((t) => t.status === "done").length / day.length < 0.3;
+  }).length;
+  const burnoutRisk = lowMoodDays >= 3 && lowTaskDays >= 3;
 
-  // Mood log: sorted newest first
-  const moodLog = moods
-    .filter((m) => m.mood_score !== null)
+  // Category stats
+  const catStats = (["must_do", "should_do", "if_energy"] as const).map((cat) => {
+    const catTasks = tasks.filter((t) => t.category === cat);
+    const catDone = catTasks.filter((t) => t.status === "done");
+    return { cat, total: catTasks.length, done: catDone.length };
+  });
+
+  // Completed tasks sorted newest first
+  const recentDone = doneTasks
+    .filter((t) => t.scheduled_date)
     .slice()
-    .sort((a, b) => b.date.localeCompare(a.date));
+    .sort((a, b) => (b.scheduled_date ?? "").localeCompare(a.scheduled_date ?? ""))
+    .slice(0, 20);
+
+  // Group completed tasks by date
+  const doneByDate: Record<string, typeof doneTasks> = {};
+  recentDone.forEach((t) => {
+    const d = t.scheduled_date!;
+    doneByDate[d] ??= [];
+    doneByDate[d].push(t);
+  });
+  const doneDates = Object.keys(doneByDate).sort((a, b) => b.localeCompare(a));
+
+  // Mood log sorted newest first
+  const moodLog = moodsWithScore.slice().sort((a, b) => b.date.localeCompare(a.date));
+
+  const hovered = hoveredDay ? moodByDate[hoveredDay] : null;
+  const hoveredTasks = hoveredDay ? (tasksByDate[hoveredDay] ?? []) : [];
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-bold">Your Wellness Analytics ✨</h1>
-        <p className="text-sm text-muted-foreground">30-day overview — patterns without pressure</p>
+        <p className="text-sm text-muted-foreground">35-day overview — patterns without pressure</p>
       </div>
 
       {/* Tab switcher */}
       <div className="flex gap-1 p-1 bg-muted/50 rounded-2xl w-fit">
-        {[
+        {([
           { id: "trends" as Tab, label: "Trends", emoji: "📊" },
           { id: "mood-log" as Tab, label: "Mood History", emoji: "💜" },
-        ].map((t) => (
+        ] as const).map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
             className={cn(
               "flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-medium transition-all",
-              tab === t.id
-                ? "bg-background shadow-soft text-foreground"
-                : "text-muted-foreground hover:text-foreground"
+              tab === t.id ? "bg-background shadow-soft text-foreground" : "text-muted-foreground hover:text-foreground"
             )}
           >
             {t.emoji} {t.label}
@@ -108,7 +149,7 @@ export function AnalyticsView({ moods, tasks, habits, completions }: AnalyticsVi
                 <div>
                   <p className="text-sm font-semibold text-orange-700 dark:text-orange-400">Gentle check-in 🌿</p>
                   <p className="text-sm text-orange-600/80 dark:text-orange-400/80 mt-0.5">
-                    Your recent patterns suggest you might be running low on energy. That&apos;s okay — it happens. Consider scheduling some rest time this week. You don&apos;t need to earn it.
+                    Your recent patterns suggest you might be running low. That&apos;s okay — rest is not a reward, it&apos;s a requirement.
                   </p>
                 </div>
               </div>
@@ -118,10 +159,10 @@ export function AnalyticsView({ moods, tasks, habits, completions }: AnalyticsVi
           {/* Stats */}
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {[
-              { label: "Avg Mood", value: `${avgMood.toFixed(1)}/7`, icon: Heart, color: "text-rose-500", bg: "from-rose-50 to-pink-50 dark:from-rose-950/30" },
-              { label: "Avg Energy", value: `${avgEnergy.toFixed(1)}/5`, icon: Sparkles, color: "text-purple-500", bg: "from-purple-50 to-violet-50 dark:from-purple-950/30" },
+              { label: "Avg Mood", value: avgMood ? `${avgMood.toFixed(1)}/7` : "—", icon: Heart, color: "text-rose-500", bg: "from-rose-50 to-pink-50 dark:from-rose-950/30" },
+              { label: "Avg Energy", value: avgEnergy ? `${avgEnergy.toFixed(1)}/5` : "—", icon: Sparkles, color: "text-purple-500", bg: "from-purple-50 to-violet-50 dark:from-purple-950/30" },
               { label: "Task Rate", value: `${overallCompletion}%`, icon: Target, color: "text-emerald-500", bg: "from-emerald-50 to-teal-50 dark:from-emerald-950/30" },
-              { label: "Top Streak", value: `${topStreak} days`, icon: Flame, color: "text-orange-500", bg: "from-orange-50 to-amber-50 dark:from-orange-950/30" },
+              { label: "Top Streak", value: topStreak ? `${topStreak} days` : "—", icon: Flame, color: "text-orange-500", bg: "from-orange-50 to-amber-50 dark:from-orange-950/30" },
             ].map((stat) => (
               <div key={stat.label} className={cn("rounded-2xl bg-gradient-to-br border border-border/40 p-4", stat.bg)}>
                 <stat.icon className={cn("h-5 w-5 mb-2", stat.color)} />
@@ -131,95 +172,255 @@ export function AnalyticsView({ moods, tasks, habits, completions }: AnalyticsVi
             ))}
           </div>
 
-          {/* Mood + energy trend */}
+          {/* Mood + Energy calendar */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base">💜 Mood & Energy — 30 Days</CardTitle>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">💜 How you&apos;ve been feeling</CardTitle>
+              <p className="text-xs text-muted-foreground">Tap any day to peek at the details</p>
             </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="date" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} interval={6} />
-                  <YAxis domain={[0, 7]} tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
-                  <Tooltip
-                    contentStyle={{
-                      background: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "12px",
-                      fontSize: "12px",
-                    }}
-                  />
-                  <defs>
-                    <linearGradient id="moodGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#f43f6e" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#f43f6e" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <Area type="monotone" dataKey="mood" stroke="#f43f6e" strokeWidth={2} fill="url(#moodGrad)" name="Mood" connectNulls />
-                  <Area type="monotone" dataKey="energy" stroke="#8b5cf6" strokeWidth={2} fill="none" name="Energy" connectNulls />
-                </AreaChart>
-              </ResponsiveContainer>
+            <CardContent className="space-y-4">
+              {/* Day-of-week headers */}
+              <div className="grid grid-cols-7 gap-1">
+                {DAY_LABELS.map((d) => (
+                  <p key={d} className="text-center text-xs text-muted-foreground font-medium">{d}</p>
+                ))}
+              </div>
+
+              {/* Mood grid */}
+              <div className="grid grid-cols-7 gap-1">
+                {gridDays.map((day) => {
+                  const dateStr = format(day, "yyyy-MM-dd");
+                  const mood = moodByDate[dateStr];
+                  const score = mood?.mood_score ?? null;
+                  const meta = score ? MOOD_META[score] : null;
+                  const future = isFuture(day) && !isToday(day);
+                  const isHovered = hoveredDay === dateStr;
+
+                  return (
+                    <button
+                      key={dateStr}
+                      onMouseEnter={() => !future && setHoveredDay(dateStr)}
+                      onMouseLeave={() => setHoveredDay(null)}
+                      onClick={() => setHoveredDay(isHovered ? null : dateStr)}
+                      disabled={future}
+                      title={format(day, "MMM d")}
+                      className={cn(
+                        "aspect-square rounded-xl flex items-center justify-center text-base transition-all",
+                        future && "opacity-20 cursor-default",
+                        !future && !meta && "bg-muted/50 hover:bg-muted",
+                        meta && meta.bg,
+                        isHovered && "ring-2 scale-110",
+                        isHovered && meta && meta.ring,
+                        isToday(day) && !meta && "ring-2 ring-primary/50"
+                      )}
+                    >
+                      {meta ? meta.emoji : (isToday(day) ? "·" : "")}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Hover tooltip */}
+              {hoveredDay && (
+                <div className="rounded-xl bg-muted/40 px-4 py-3 space-y-1">
+                  <p className="text-sm font-semibold">{format(parseISO(hoveredDay), "EEEE, MMMM d")}</p>
+                  {hovered?.mood_score ? (
+                    <>
+                      <p className="text-sm">
+                        {MOOD_META[hovered.mood_score].emoji} {MOOD_META[hovered.mood_score].label}
+                        {hovered.energy_level && <span className="text-muted-foreground ml-2">· Energy {hovered.energy_level}/5</span>}
+                      </p>
+                      {hovered.note && <p className="text-xs text-muted-foreground italic">&ldquo;{hovered.note}&rdquo;</p>}
+                    </>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">No mood logged</p>
+                  )}
+                  {hoveredTasks.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      {hoveredTasks.filter((t) => t.status === "done").length}/{hoveredTasks.length} tasks done
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Energy strip */}
+              {moodsWithEnergy.length > 0 && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2">⚡ Energy level by day</p>
+                  <div className="grid grid-cols-7 gap-1">
+                    {gridDays.map((day) => {
+                      const dateStr = format(day, "yyyy-MM-dd");
+                      const mood = moodByDate[dateStr];
+                      const energy = mood?.energy_level ?? null;
+                      const future = isFuture(day) && !isToday(day);
+                      return (
+                        <div
+                          key={dateStr}
+                          className={cn("h-3 rounded-full transition-all", future ? "opacity-20" : energy ? ENERGY_COLOR[energy] : "bg-muted/40")}
+                          title={energy ? `${format(day, "MMM d")}: energy ${energy}/5` : undefined}
+                        />
+                      );
+                    })}
+                  </div>
+                  <div className="flex items-center gap-3 mt-2">
+                    <p className="text-xs text-muted-foreground">Low</p>
+                    <div className="flex gap-1">
+                      {[1,2,3,4,5].map((n) => (
+                        <div key={n} className={cn("h-2.5 w-5 rounded-full", ENERGY_COLOR[n])} />
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground">High</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Mood legend */}
+              <div className="flex flex-wrap gap-2 pt-1">
+                {Object.entries(MOOD_META).map(([score, meta]) => (
+                  <div key={score} className="flex items-center gap-1">
+                    <span className="text-sm">{meta.emoji}</span>
+                    <span className="text-xs text-muted-foreground">{meta.label}</span>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
 
-          {/* Productivity chart */}
+          {/* Task activity */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base">🎯 Task Completion — 30 Days</CardTitle>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">✅ What you&apos;ve been getting done</CardTitle>
             </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={180}>
-                <BarChart data={chartData.filter((d) => d.taskCompletion !== null)} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="date" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} interval={6} />
-                  <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} tickLine={false} axisLine={false} unit="%" />
-                  <Tooltip
-                    contentStyle={{
-                      background: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "12px",
-                      fontSize: "12px",
-                    }}
-                  />
-                  <Bar dataKey="taskCompletion" fill="#f43f6e" radius={[4, 4, 0, 0]} name="Completion %" />
-                </BarChart>
-              </ResponsiveContainer>
+            <CardContent className="space-y-5">
+              {/* Contribution heatmap */}
+              <div>
+                <div className="grid grid-cols-7 gap-1 mb-1">
+                  {DAY_LABELS.map((d) => (
+                    <p key={d} className="text-center text-xs text-muted-foreground font-medium">{d}</p>
+                  ))}
+                </div>
+                <div className="grid grid-cols-7 gap-1">
+                  {gridDays.map((day) => {
+                    const dateStr = format(day, "yyyy-MM-dd");
+                    const dayTasks = tasksByDate[dateStr] ?? [];
+                    const doneCount = dayTasks.filter((t) => t.status === "done").length;
+                    const future = isFuture(day) && !isToday(day);
+                    return (
+                      <div
+                        key={dateStr}
+                        title={dayTasks.length ? `${format(day, "MMM d")}: ${doneCount}/${dayTasks.length} done` : format(day, "MMM d")}
+                        className={cn(
+                          "aspect-square rounded-xl flex items-center justify-center text-xs font-bold transition-all",
+                          future ? "opacity-20" : taskDotColor(doneCount),
+                          doneCount > 0 && "text-white"
+                        )}
+                      >
+                        {!future && doneCount > 0 ? doneCount : ""}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="flex items-center gap-2 mt-2">
+                  <p className="text-xs text-muted-foreground">0</p>
+                  {["bg-muted", "bg-emerald-200 dark:bg-emerald-800", "bg-emerald-400 dark:bg-emerald-600", "bg-emerald-600 dark:bg-emerald-400"].map((c, i) => (
+                    <div key={i} className={cn("h-2.5 w-5 rounded-full", c)} />
+                  ))}
+                  <p className="text-xs text-muted-foreground">4+ tasks</p>
+                </div>
+              </div>
+
+              {/* Category breakdown */}
+              {tasks.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">By priority</p>
+                  {catStats.map(({ cat, total, done }) => {
+                    const config = TASK_CATEGORY_CONFIG[cat];
+                    const rate = total ? Math.round((done / total) * 100) : 0;
+                    return (
+                      <div key={cat} className="flex items-center gap-3">
+                        <span className="text-sm w-4">{config.emoji}</span>
+                        <span className="text-xs text-muted-foreground w-20 shrink-0">{config.label}</span>
+                        <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className={cn("h-full rounded-full transition-all duration-700", config.bgColor)}
+                            style={{ width: `${rate}%` }}
+                          />
+                        </div>
+                        <span className="text-xs text-muted-foreground w-16 text-right shrink-0">{done}/{total} done</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Completed tasks log */}
+              {doneDates.length > 0 && (
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Recent completions</p>
+                  {doneDates.map((date) => (
+                    <div key={date}>
+                      <p className="text-xs font-medium text-muted-foreground mb-1.5">
+                        {format(parseISO(date), "EEE, MMM d")}
+                      </p>
+                      <div className="space-y-1">
+                        {doneByDate[date].map((task, i) => (
+                          <div key={i} className="flex items-center gap-2 rounded-xl bg-muted/30 px-3 py-2">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                            <span className="text-xs">{task.emoji} {task.title ?? "Task"}</span>
+                            <span className={cn("text-xs ml-auto shrink-0", TASK_CATEGORY_CONFIG[task.category as keyof typeof TASK_CATEGORY_CONFIG]?.color)}>
+                              {TASK_CATEGORY_CONFIG[task.category as keyof typeof TASK_CATEGORY_CONFIG]?.emoji}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {doneTasks.length === 0 && (
+                <div className="empty-state py-6">
+                  <p className="text-2xl mb-2">🌱</p>
+                  <p className="text-sm text-muted-foreground">No completed tasks yet — you&apos;re just getting started</p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
           {/* Habit consistency */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">🌿 Habit Consistency</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {habits.slice(0, 6).map((habit) => {
-                  const habitCompletions = completions.filter((c) => c.habit_id === habit.id);
-                  const rate = Math.round((habitCompletions.length / 30) * 100);
-                  return (
-                    <div key={habit.id} className="flex items-center gap-3">
-                      <span className="w-6 text-center">{habit.emoji ?? "✨"}</span>
-                      <span className="text-sm font-medium w-32 truncate">{habit.name}</span>
-                      <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500 transition-all duration-700"
-                          style={{ width: `${rate}%` }}
-                        />
+          {habits.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">🌿 Habit Consistency</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {habits.slice(0, 6).map((habit) => {
+                    const habitCompletions = completions.filter((c) => c.habit_id === habit.id);
+                    const rate = Math.round((habitCompletions.length / 35) * 100);
+                    return (
+                      <div key={habit.id} className="flex items-center gap-3">
+                        <span className="w-6 text-center">{habit.emoji ?? "✨"}</span>
+                        <span className="text-sm font-medium w-32 truncate">{habit.name}</span>
+                        <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500 transition-all duration-700"
+                            style={{ width: `${rate}%` }}
+                          />
+                        </div>
+                        <span className="text-xs text-muted-foreground w-10 text-right">{rate}%</span>
+                        {habit.streak_current > 0 && (
+                          <span className="text-xs text-orange-500 font-semibold w-12 text-right">
+                            🔥 {habit.streak_current}
+                          </span>
+                        )}
                       </div>
-                      <span className="text-xs text-muted-foreground w-10 text-right">{rate}%</span>
-                      {habit.streak_current > 0 && (
-                        <span className="text-xs text-orange-500 font-semibold w-12 text-right">
-                          🔥 {habit.streak_current}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Gentle insights */}
           <Card className="bg-gradient-to-br from-rose-50/80 to-purple-50/80 dark:from-rose-950/20 dark:to-purple-950/20 border-border/30">
@@ -230,14 +431,15 @@ export function AnalyticsView({ moods, tasks, habits, completions }: AnalyticsVi
                   <p className="text-sm font-semibold">Your pattern this month</p>
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     {avgMood >= 5
-                      ? "Your mood has been beautifully stable this month. Whatever you're doing — keep doing it."
+                      ? "Your mood has been beautifully stable. Whatever you're doing — keep doing it."
                       : avgMood >= 3
                       ? "You've had a mix of good and challenging days. That's just being human. You're still here, and that counts."
-                      : "It looks like you've been carrying something heavy lately. Please be extra gentle with yourself. Consistency doesn't have to happen every day."}
-                    {" "}
-                    {overallCompletion >= 70
+                      : avgMood > 0
+                      ? "It looks like you've been carrying something heavy lately. Please be extra gentle with yourself."
+                      : "Start logging your mood daily — even just an emoji. You'll start to see your own patterns."}{" "}
+                    {tasks.length > 0 && (overallCompletion >= 70
                       ? `You completed ${overallCompletion}% of your tasks — that's genuinely impressive.`
-                      : `You completed ${overallCompletion}% of planned tasks. Remember: the goal isn't 100%, it's sustainable.`}
+                      : `You completed ${overallCompletion}% of planned tasks. The goal isn't 100%, it's sustainable.`)}
                   </p>
                 </div>
               </div>
@@ -247,14 +449,7 @@ export function AnalyticsView({ moods, tasks, habits, completions }: AnalyticsVi
       )}
 
       {tab === "mood-log" && (
-        <div className="space-y-4">
-          <div className="rounded-2xl bg-gradient-to-r from-rose-50 to-purple-50 dark:from-rose-950/30 dark:to-purple-950/20 border border-border/40 p-4">
-            <h2 className="font-display text-lg font-semibold mb-1">💜 Mood History</h2>
-            <p className="text-sm text-muted-foreground">
-              A log of how you&apos;ve been feeling. No judgment — just patterns to understand yourself better.
-            </p>
-          </div>
-
+        <div className="space-y-3">
           {moodLog.length === 0 ? (
             <div className="empty-state py-12">
               <p className="text-4xl mb-3">💜</p>
@@ -262,49 +457,59 @@ export function AnalyticsView({ moods, tasks, habits, completions }: AnalyticsVi
               <p className="text-sm text-muted-foreground mt-1">Start tracking from your dashboard</p>
             </div>
           ) : (
-            <div className="space-y-2">
-              {moodLog.map((entry) => {
-                const score = entry.mood_score as number;
-                const moodInfo = MOOD_LABELS[score];
-                return (
-                  <div
-                    key={entry.date}
-                    className="flex items-center gap-4 rounded-xl border border-border/50 bg-card px-4 py-3"
-                  >
-                    <div className="flex items-center gap-1 shrink-0">
-                      <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground w-24">
-                        {format(parseISO(entry.date), "EEE, MMM d")}
-                      </span>
-                    </div>
-                    <span className="text-xl shrink-0">{moodInfo?.emoji ?? "💜"}</span>
+            moodLog.map((entry) => {
+              const score = entry.mood_score as number;
+              const meta = MOOD_META[score];
+              return (
+                <div
+                  key={entry.date}
+                  className={cn("rounded-2xl border border-border/40 px-4 py-3 space-y-2", meta?.bg)}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{meta?.emoji ?? "💜"}</span>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className={cn("text-sm font-medium", moodInfo?.color)}>{moodInfo?.label ?? entry.mood_label}</p>
-                        {entry.energy_level && (
-                          <span className="text-xs text-muted-foreground">· Energy {entry.energy_level}/5</span>
-                        )}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-semibold">{meta?.label ?? entry.mood_label}</p>
+                        <p className="text-xs text-muted-foreground">{format(parseISO(entry.date), "EEE, MMMM d")}</p>
                       </div>
-                      {entry.note && (
-                        <p className="text-xs text-muted-foreground mt-0.5 truncate">{entry.note}</p>
+                      {entry.energy_level && (
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <p className="text-xs text-muted-foreground">Energy</p>
+                          <div className="flex gap-0.5">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                              <div
+                                key={i}
+                                className={cn(
+                                  "h-2 w-4 rounded-full",
+                                  i < (entry.energy_level ?? 0) ? ENERGY_COLOR[entry.energy_level ?? 0] : "bg-muted"
+                                )}
+                              />
+                            ))}
+                          </div>
+                          <p className="text-xs text-muted-foreground">{entry.energy_level}/5</p>
+                        </div>
                       )}
                     </div>
-                    {/* Mood score bar */}
-                    <div className="flex items-center gap-1 shrink-0">
+                    {/* Score bars */}
+                    <div className="flex items-end gap-0.5 shrink-0">
                       {Array.from({ length: 7 }).map((_, i) => (
                         <div
                           key={i}
                           className={cn(
-                            "h-3 w-1.5 rounded-full transition-all",
-                            i < score ? "bg-primary" : "bg-muted"
+                            "w-1.5 rounded-full transition-all",
+                            i < score ? "bg-current opacity-70" : "bg-muted"
                           )}
+                          style={{ height: `${(i + 1) * 4}px` }}
                         />
                       ))}
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                  {entry.note && (
+                    <p className="text-xs text-muted-foreground/80 italic pl-9">&ldquo;{entry.note}&rdquo;</p>
+                  )}
+                </div>
+              );
+            })
           )}
         </div>
       )}

@@ -40,9 +40,9 @@ const CONTACT_OPTIONS = [
   },
   {
     icon: Inbox,
-    title: "Something else?",
-    description: "Not sure where to start? Just drop us a line — we read everything",
-    label: "Email us directly",
+    title: "Just want to say hi?",
+    description: "Literally anything. We're real people and we love hearing from you.",
+    label: "hello@softlivi.com",
     href: "mailto:hello@softlivi.com",
   },
 ];

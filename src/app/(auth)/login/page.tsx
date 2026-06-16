@@ -205,8 +205,8 @@ function LoginContent() {
 
         <p className="mt-6 text-center text-xs text-muted-foreground">
           By continuing, you agree to our{" "}
-          <Link href="#" className="hover:underline">Terms</Link> and{" "}
-          <Link href="#" className="hover:underline">Privacy Policy</Link>.
+          <Link href="/terms" className="hover:underline">Terms</Link> and{" "}
+          <Link href="/privacy" className="hover:underline">Privacy Policy</Link>.
         </p>
       </motion.div>
     </div>

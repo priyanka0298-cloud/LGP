@@ -44,13 +44,17 @@ export function LandingNav() {
 
         {/* Desktop nav */}
         <nav className="hidden items-center gap-8 md:flex">
-          {["Features", "Pricing", "Templates", "Blog"].map((item) => (
+          {[
+            { label: "Features", href: "/#features" },
+            { label: "Pricing", href: "/pricing" },
+            { label: "Templates", href: "/marketplace" },
+          ].map((item) => (
             <Link
-              key={item}
-              href={item === "Pricing" ? "/pricing" : `/#${item.toLowerCase()}`}
+              key={item.label}
+              href={item.href}
               className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
-              {item}
+              {item.label}
             </Link>
           ))}
         </nav>
@@ -83,14 +87,18 @@ export function LandingNav() {
           className="border-t border-border/50 bg-background/95 backdrop-blur-md px-6 py-4 md:hidden"
         >
           <div className="flex flex-col gap-3">
-            {["Features", "Pricing", "Templates"].map((item) => (
+            {[
+              { label: "Features", href: "/#features" },
+              { label: "Pricing", href: "/pricing" },
+              { label: "Templates", href: "/marketplace" },
+            ].map((item) => (
               <Link
-                key={item}
-                href={item === "Pricing" ? "/pricing" : `/#${item.toLowerCase()}`}
+                key={item.label}
+                href={item.href}
                 className="py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
                 onClick={() => setMobileOpen(false)}
               >
-                {item}
+                {item.label}
               </Link>
             ))}
             <div className="flex gap-3 pt-2">

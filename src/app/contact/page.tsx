@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { Mail, MessageCircle, Bug, Shield, Clock } from "lucide-react";
+import { Mail, MessageCircle, Bug, Shield, Clock, Inbox } from "lucide-react";
 import { LandingNav } from "@/components/landing/LandingNav";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 
@@ -15,28 +15,35 @@ const CONTACT_OPTIONS = [
     title: "General question",
     description: "Anything and everything",
     label: "Send a message",
-    href: "mailto:hello@softlivi.com?subject=Question about Softlivi",
+    href: "mailto:hello@softlivi.com?subject=Question%20about%20Softlivi",
   },
   {
     icon: MessageCircle,
     title: "Feature request",
     description: "Got an idea? We're all ears",
     label: "Share your idea",
-    href: "mailto:hello@softlivi.com?subject=Feature Request: [your idea]",
+    href: "mailto:hello@softlivi.com?subject=Feature%20Request",
   },
   {
     icon: Bug,
     title: "Report a bug",
     description: "Something not working right?",
     label: "Report it",
-    href: "mailto:hello@softlivi.com?subject=Bug Report: [what happened]",
+    href: "mailto:hello@softlivi.com?subject=Bug%20Report",
   },
   {
     icon: Shield,
     title: "Privacy request",
-    description: "Data export, account deletion, etc.",
+    description: "Data export, account deletion, and more",
     label: "Submit request",
-    href: "mailto:hello@softlivi.com?subject=Privacy Request",
+    href: "mailto:hello@softlivi.com?subject=Privacy%20Request",
+  },
+  {
+    icon: Inbox,
+    title: "Something else?",
+    description: "Not sure where to start? Just drop us a line — we read everything",
+    label: "Email us directly",
+    href: "mailto:hello@softlivi.com",
   },
 ];
 
@@ -47,7 +54,7 @@ export default function ContactPage() {
       <main className="mx-auto max-w-3xl px-6 py-24">
         <h1 className="font-display text-4xl font-bold mb-2">Contact us</h1>
         <p className="text-muted-foreground mb-10">
-          We&apos;d love to hear from you. Pick a topic below and your email app will open with the right subject line ready to go.
+          We&apos;d love to hear from you. Tap a topic below and your email app will open — no copy-pasting needed.
         </p>
 
         <div className="grid gap-4 sm:grid-cols-2 mb-10">
@@ -55,7 +62,8 @@ export default function ContactPage() {
             <a
               key={option.title}
               href={option.href}
-              className="group rounded-2xl border border-border/50 bg-card p-5 hover:border-primary/30 hover:bg-primary/5 transition-colors"
+              rel="noopener noreferrer"
+              className="group cursor-pointer rounded-2xl border border-border/50 bg-card p-5 hover:border-primary/30 hover:bg-primary/5 transition-colors"
             >
               <option.icon className="h-5 w-5 text-primary mb-3" />
               <p className="font-medium text-sm mb-1">{option.title}</p>

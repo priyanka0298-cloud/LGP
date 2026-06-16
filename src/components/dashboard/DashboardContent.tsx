@@ -14,7 +14,7 @@ import { AIAssistantCard } from "./AIAssistantCard";
 import { DailyAffirmation } from "./DailyAffirmation";
 import { CycleWidget } from "./CycleWidget";
 import { FoodLogCard } from "./FoodLogCard";
-import type { Task, Habit, Mood, Profile, Subscription, WeeklyPlan } from "@/types";
+import type { Task, TaskCategory, Habit, Mood, Profile, Subscription, WeeklyPlan } from "@/types";
 import { TASK_CATEGORY_CONFIG, MOOD_EMOJIS } from "@/types";
 import { cn, getCompletionRate } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -67,7 +67,7 @@ export function DashboardContent({
     : 0;
   const streakDays = Math.max(...habits.map((h) => h.streak_current), 0);
 
-  async function updateTask(taskId: string, updates: { title?: string; category?: string }) {
+  async function updateTask(taskId: string, updates: { title?: string; category?: TaskCategory }) {
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates } : t));
     await supabase.from("tasks").update(updates).eq("id", taskId);
   }

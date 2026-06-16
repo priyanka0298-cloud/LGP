@@ -10,7 +10,6 @@ import {
   BookOpen,
   BarChart3,
   ShoppingBag,
-  Settings,
   Sparkles,
   ChevronLeft,
   ChevronRight,
@@ -82,9 +81,7 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
-const BOTTOM_ITEMS: NavItem[] = [
-  { href: "/settings", label: "Settings", icon: Settings, gradient: "from-gray-400 to-slate-500" },
-];
+const BOTTOM_ITEMS: NavItem[] = [];
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);

@@ -36,8 +36,7 @@ export function FoodLogCard({ userId }: { userId: string }) {
         .select("id, content")
         .eq("user_id", userId)
         .eq("entry_date", today)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .eq("entry_type", "food_log" as any)
+        .eq("entry_type", "food_log")
         .maybeSingle();
 
       if (data) {
@@ -63,8 +62,7 @@ export function FoodLogCard({ userId }: { userId: string }) {
     } else {
       const { data } = await supabase
         .from("journal_entries")
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .insert({ user_id: userId, entry_date: today, entry_type: "food_log" as any, content: payload })
+        .insert({ user_id: userId, entry_date: today, entry_type: "food_log", content: payload })
         .select("id")
         .single();
       if (data) setEntryId(data.id as string);

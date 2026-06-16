@@ -501,7 +501,7 @@ export function JournalView({ userId, todayEntry, recentEntries }: JournalViewPr
                                   </div>
                                 )}
 
-                                {(entry.entry_type as string) === "food_log" && (() => {
+                                {entry.entry_type === "food_log" && (() => {
                                   const foodEntries = Array.isArray(entryContent.entries)
                                     ? (entryContent.entries as FoodEntry[]) : [];
                                   const waterCount = entryContent.water ? Number(entryContent.water) : 0;

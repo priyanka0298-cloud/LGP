@@ -323,7 +323,7 @@ export interface Database {
           id: string;
           user_id: string;
           entry_date: string;
-          entry_type: "daily" | "weekly_reflection" | "monthly_reflection" | "free_write" | "gratitude" | "brain_dump";
+          entry_type: "daily" | "weekly_reflection" | "monthly_reflection" | "free_write" | "gratitude" | "brain_dump" | "food_log";
           title: string | null;
           content: Json;
           mood_snapshot: number | null;
@@ -339,7 +339,7 @@ export interface Database {
         Insert: {
           user_id: string;
           entry_date: string;
-          entry_type?: "daily" | "weekly_reflection" | "monthly_reflection" | "free_write" | "gratitude" | "brain_dump";
+          entry_type?: "daily" | "weekly_reflection" | "monthly_reflection" | "free_write" | "gratitude" | "brain_dump" | "food_log";
           title?: string | null;
           content?: Json;
           mood_snapshot?: number | null;
@@ -349,7 +349,7 @@ export interface Database {
           tags?: string[];
         };
         Update: {
-          entry_type?: "daily" | "weekly_reflection" | "monthly_reflection" | "free_write" | "gratitude" | "brain_dump";
+          entry_type?: "daily" | "weekly_reflection" | "monthly_reflection" | "free_write" | "gratitude" | "brain_dump" | "food_log";
           title?: string | null;
           content?: Json;
           mood_snapshot?: number | null;

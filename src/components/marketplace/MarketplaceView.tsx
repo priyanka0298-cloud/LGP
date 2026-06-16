@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
-import { Star, Filter, Search, Sparkles, Lock, CheckCircle2, Wand2 } from "lucide-react";
+import { Star, Filter, Search, Sparkles, Lock, CheckCircle2, Wand2, X, ListChecks, Repeat2, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { formatCurrency, cn } from "@/lib/utils";
 import type { PlannerTemplate } from "@/types";
+import { TEMPLATE_CONFIGS } from "@/lib/template-configs";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
@@ -19,11 +20,22 @@ interface MarketplaceViewProps {
 
 const CATEGORIES = ["All", "weekly", "daily", "monthly", "goal", "habit", "journal", "vision_board"];
 
+const CATEGORY_EMOJI: Record<string, string> = {
+  weekly: "📅",
+  daily: "☀️",
+  monthly: "🗓️",
+  goal: "🎯",
+  habit: "🌿",
+  journal: "📓",
+  vision_board: "✨",
+};
+
 export function MarketplaceView({ templates, purchasedIds, userId, isPremium }: MarketplaceViewProps) {
   const [activeCategory, setActiveCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [applying, setApplying] = useState<string | null>(null);
   const [applied, setApplied] = useState<Set<string>>(new Set(purchasedIds));
+  const [preview, setPreview] = useState<PlannerTemplate | null>(null);
   const router = useRouter();
 
   const filtered = templates.filter((t) => {
@@ -43,7 +55,6 @@ export function MarketplaceView({ templates, purchasedIds, userId, isPremium }: 
       return;
     }
 
-    // Paid template — check premium or go to checkout
     if (template.price_cents > 0 && !applied.has(template.id)) {
       const stripeReady = !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY &&
         !process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.startsWith("pk_test_your-");
@@ -62,7 +73,6 @@ export function MarketplaceView({ templates, purchasedIds, userId, isPremium }: 
       return;
     }
 
-    // Free or already purchased — apply
     setApplying(template.id);
     try {
       const res = await fetch("/api/templates/apply", {
@@ -77,6 +87,7 @@ export function MarketplaceView({ templates, purchasedIds, userId, isPremium }: 
       }
       setApplied((prev) => new Set([...prev, template.id]));
       toast.success(data.welcome, { duration: 5000 });
+      setPreview(null);
       router.refresh();
     } catch {
       toast.error("Couldn't apply the template. Try again 🌸");
@@ -89,7 +100,7 @@ export function MarketplaceView({ templates, purchasedIds, userId, isPremium }: 
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-bold">Template Marketplace 🛍️</h1>
-        <p className="text-sm text-muted-foreground">Curated planning systems — apply one tap to your planner</p>
+        <p className="text-sm text-muted-foreground">Curated planning systems — tap a template to preview, then apply in one tap</p>
       </div>
 
       {/* Search & filters */}
@@ -134,8 +145,7 @@ export function MarketplaceView({ templates, purchasedIds, userId, isPremium }: 
                 key={template.id}
                 template={template}
                 isApplied={applied.has(template.id)}
-                isApplying={applying === template.id}
-                onApply={() => handleApply(template)}
+                onPreview={() => setPreview(template)}
                 featured
               />
             ))}
@@ -161,13 +171,131 @@ export function MarketplaceView({ templates, purchasedIds, userId, isPremium }: 
                 key={template.id}
                 template={template}
                 isApplied={applied.has(template.id)}
-                isApplying={applying === template.id}
-                onApply={() => handleApply(template)}
+                onPreview={() => setPreview(template)}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* Preview panel */}
+      {preview && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+            onClick={() => setPreview(null)}
+          />
+          {/* Slide-up panel */}
+          <div className="fixed bottom-0 left-0 right-0 z-50 max-h-[85vh] overflow-y-auto rounded-t-3xl bg-background border-t border-border shadow-2xl sm:left-1/2 sm:-translate-x-1/2 sm:max-w-lg sm:rounded-2xl sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2">
+            {/* Handle */}
+            <div className="flex justify-center pt-3 pb-1 sm:hidden">
+              <div className="h-1 w-10 rounded-full bg-muted-foreground/30" />
+            </div>
+
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex items-start justify-between gap-3 mb-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-100 to-purple-100 dark:from-rose-950/40 dark:to-purple-950/40 text-2xl">
+                    {CATEGORY_EMOJI[preview.category] ?? "📋"}
+                  </div>
+                  <div>
+                    <h2 className="font-semibold text-base leading-snug">{preview.title}</h2>
+                    <p className="text-xs text-muted-foreground capitalize mt-0.5">{preview.category.replace("_", " ")} template</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setPreview(null)}
+                  className="rounded-xl p-1.5 hover:bg-muted transition-colors shrink-0"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Description */}
+              <p className="text-sm text-muted-foreground mb-5">{preview.description}</p>
+
+              {/* What's included */}
+              {TEMPLATE_CONFIGS[preview.title] && (
+                <div className="space-y-4 mb-5">
+                  {TEMPLATE_CONFIGS[preview.title].habits?.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <Repeat2 className="h-3.5 w-3.5" />
+                        Habits added ({TEMPLATE_CONFIGS[preview.title].habits.length})
+                      </p>
+                      <div className="space-y-1.5">
+                        {TEMPLATE_CONFIGS[preview.title].habits.map((h, i) => (
+                          <div key={i} className="flex items-center gap-2 rounded-xl bg-muted/50 px-3 py-2 text-sm">
+                            <span>{h.emoji ?? "🌸"}</span>
+                            <span>{h.name}</span>
+                            <Badge variant="outline" className="ml-auto text-[10px] capitalize">{h.frequency}</Badge>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {TEMPLATE_CONFIGS[preview.title].tasks?.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <ListChecks className="h-3.5 w-3.5" />
+                        Tasks added ({TEMPLATE_CONFIGS[preview.title].tasks.length})
+                      </p>
+                      <div className="space-y-1.5">
+                        {TEMPLATE_CONFIGS[preview.title].tasks.map((t, i) => (
+                          <div key={i} className="flex items-center gap-2 rounded-xl bg-muted/50 px-3 py-2 text-sm">
+                            <span>{t.emoji ?? "✅"}</span>
+                            <span>{t.title}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Tags */}
+              {preview.tags?.length > 0 && (
+                <div className="flex gap-1 flex-wrap mb-5">
+                  {preview.tags.map((tag) => (
+                    <span key={tag} className="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground capitalize">
+                      {tag.replace(/-/g, " ")}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Apply button */}
+              {applied.has(preview.id) ? (
+                <Button variant="outline" className="w-full gap-2" disabled>
+                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                  Already applied to your planner
+                </Button>
+              ) : preview.price_cents > 0 ? (
+                <Button variant="gradient" className="w-full gap-2" onClick={() => handleApply(preview)}>
+                  <Lock className="h-4 w-4" />
+                  Buy for {formatCurrency(preview.price_cents)}
+                </Button>
+              ) : (
+                <Button
+                  variant="gradient"
+                  className="w-full gap-2"
+                  onClick={() => handleApply(preview)}
+                  disabled={applying === preview.id}
+                >
+                  {applying === preview.id ? (
+                    <><span className="animate-spin">✨</span> Applying...</>
+                  ) : (
+                    <><Wand2 className="h-4 w-4" /> Apply this template</>
+                  )}
+                </Button>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -175,23 +303,22 @@ export function MarketplaceView({ templates, purchasedIds, userId, isPremium }: 
 function TemplateCard({
   template,
   isApplied,
-  isApplying,
-  onApply,
+  onPreview,
   featured,
 }: {
   template: PlannerTemplate;
   isApplied: boolean;
-  isApplying: boolean;
-  onApply: () => void;
+  onPreview: () => void;
   featured?: boolean;
 }) {
   const isFree = template.price_cents === 0;
-  const canApply = isFree || isApplied;
+  const config = TEMPLATE_CONFIGS[template.title];
 
   return (
     <div
+      onClick={onPreview}
       className={cn(
-        "rounded-2xl border border-border/50 bg-card overflow-hidden group",
+        "rounded-2xl border border-border/50 bg-card overflow-hidden group cursor-pointer hover:border-primary/30 hover:shadow-md transition-all",
         featured && "ring-1 ring-primary/20"
       )}
     >
@@ -221,10 +348,10 @@ function TemplateCard({
           </div>
         )}
         {isApplied && (
-          <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-            <div className="bg-white/90 rounded-xl px-3 py-1.5 flex items-center gap-1.5 text-sm font-medium text-emerald-700">
-              <CheckCircle2 className="h-4 w-4" /> Applied
-            </div>
+          <div className="absolute top-2 right-2">
+            <Badge className="bg-emerald-500 text-white border-0 text-xs gap-1">
+              <CheckCircle2 className="h-3 w-3" /> Applied
+            </Badge>
           </div>
         )}
       </div>
@@ -241,69 +368,32 @@ function TemplateCard({
 
         <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{template.description}</p>
 
-        {/* Tags */}
-        <div className="flex gap-1 flex-wrap mb-3">
-          {template.tags?.slice(0, 3).map((tag) => (
-            <span key={tag} className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground capitalize">
-              {tag.replace(/-/g, " ")}
-            </span>
-          ))}
-        </div>
+        {/* What's inside preview */}
+        {config && (
+          <div className="flex gap-3 text-xs text-muted-foreground mb-3">
+            {config.habits?.length > 0 && (
+              <span className="flex items-center gap-1">
+                <Repeat2 className="h-3 w-3" /> {config.habits.length} habits
+              </span>
+            )}
+            {config.tasks?.length > 0 && (
+              <span className="flex items-center gap-1">
+                <ListChecks className="h-3 w-3" /> {config.tasks.length} tasks
+              </span>
+            )}
+          </div>
+        )}
 
-        {/* Stats */}
-        <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
             <Wand2 className="h-3 w-3" />
             {template.download_count.toLocaleString()} applied
           </span>
-          {template.rating_average && (
-            <span className="flex items-center gap-1">
-              <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-              {template.rating_average.toFixed(1)} ({template.rating_count})
-            </span>
-          )}
+          <span className="flex items-center gap-1 text-primary font-medium">
+            Preview <ChevronRight className="h-3 w-3" />
+          </span>
         </div>
-
-        <Button
-          variant={isApplied ? "outline" : canApply ? "gradient" : "outline"}
-          size="sm"
-          className="w-full gap-1.5 text-xs"
-          onClick={onApply}
-          disabled={isApplying || isApplied}
-        >
-          {isApplied ? (
-            <>
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-              Applied to your planner
-            </>
-          ) : isApplying ? (
-            <>
-              <span className="animate-spin">✨</span>
-              Applying...
-            </>
-          ) : canApply ? (
-            <>
-              <Wand2 className="h-3.5 w-3.5" />
-              Use this template
-            </>
-          ) : (
-            <>
-              <Lock className="h-3.5 w-3.5" />
-              Buy • {formatCurrency(template.price_cents)}
-            </>
-          )}
-        </Button>
       </div>
     </div>
   );
 }
-
-const CATEGORY_EMOJI: Record<string, string> = {
-  weekly: "📅",
-  daily: "☀️",
-  monthly: "🗓️",
-  goal: "🎯",
-  habit: "🌿",
-  journal: "📓",
-  vision_board: "✨",
-};

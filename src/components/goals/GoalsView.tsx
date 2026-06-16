@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Target, Sparkles, Check, Trash2, Pin, Trophy, ChevronDown, ChevronUp, PenLine } from "lucide-react";
+import { Plus, Target, Sparkles, Check, Trash2, Pin, Trophy, ChevronDown, ChevronUp, PenLine, CalendarDays } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -51,6 +51,7 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
   const [why, setWhy] = useState("");
   const [category, setCategory] = useState("personal");
   const [horizon, setHorizon] = useState("monthly");
+  const [targetDate, setTargetDate] = useState("");
   const [saving, setSaving] = useState(false);
 
   async function createGoal(useAI: boolean) {
@@ -61,7 +62,7 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
 
     const { data, error } = await supabase
       .from("goals")
-      .insert({ user_id: userId, title: title.trim(), why: why.trim() || null, category, time_horizon: horizon, emoji: catEmoji })
+      .insert({ user_id: userId, title: title.trim(), why: why.trim() || null, category, time_horizon: horizon, emoji: catEmoji, target_date: targetDate || null })
       .select()
       .single();
 
@@ -76,6 +77,7 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
     setWhy("");
     setCategory("personal");
     setHorizon("monthly");
+    setTargetDate("");
     setShowForm(false);
     setSaving(false);
     setExpandedId(data.id);
@@ -215,6 +217,19 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
                       {h.label}
                     </button>
                   ))}
+                </div>
+
+                {/* Optional deadline */}
+                <div className="flex items-center gap-2">
+                  <CalendarDays className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <input
+                    type="date"
+                    value={targetDate}
+                    onChange={e => setTargetDate(e.target.value)}
+                    min={new Date().toISOString().split("T")[0]}
+                    className="rounded-xl border border-input bg-muted/30 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary text-muted-foreground [&:not([value=''])]:text-foreground"
+                  />
+                  <span className="text-xs text-muted-foreground">Deadline (optional)</span>
                 </div>
 
                 {/* Two save options */}
@@ -369,8 +384,17 @@ function GoalCard({
                   </span>
                   {goal.is_pinned && <Pin className="h-3 w-3 text-primary shrink-0" />}
                 </div>
-                <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
                   <span>{HORIZONS.find(h => h.value === goal.time_horizon)?.label}</span>
+                  {goal.target_date && !isAchieved && (
+                    <span className={cn(
+                      "flex items-center gap-1",
+                      new Date(goal.target_date) < new Date() ? "text-red-400" : "text-muted-foreground"
+                    )}>
+                      <CalendarDays className="h-3 w-3" />
+                      {new Date(goal.target_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    </span>
+                  )}
                   {steps.length > 0
                     ? <span>{doneCount}/{steps.length} steps · {progress}%</span>
                     : !isAchieved && <span className="text-primary/70">tap to add steps</span>

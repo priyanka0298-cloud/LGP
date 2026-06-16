@@ -362,6 +362,62 @@ export interface Database {
         };
         Relationships: [];
       };
+      push_subscriptions: {
+        Row: {
+          id: string;
+          user_id: string;
+          endpoint: string;
+          p256dh: string;
+          auth: string;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          endpoint: string;
+          p256dh: string;
+          auth: string;
+        };
+        Update: {
+          endpoint?: string;
+          p256dh?: string;
+          auth?: string;
+        };
+        Relationships: [];
+      };
+      reminders: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string;
+          scheduled_time: string;
+          repeat_type: "once" | "daily" | "weekdays" | "weekends" | "weekly";
+          repeat_days: number[] | null;
+          scheduled_date: string | null;
+          is_active: boolean;
+          last_sent_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          title: string;
+          scheduled_time: string;
+          repeat_type?: "once" | "daily" | "weekdays" | "weekends" | "weekly";
+          repeat_days?: number[] | null;
+          scheduled_date?: string | null;
+          is_active?: boolean;
+        };
+        Update: {
+          title?: string;
+          scheduled_time?: string;
+          repeat_type?: "once" | "daily" | "weekdays" | "weekends" | "weekly";
+          repeat_days?: number[] | null;
+          scheduled_date?: string | null;
+          is_active?: boolean;
+          last_sent_at?: string | null;
+        };
+        Relationships: [];
+      };
       goals: {
         Row: {
           id: string;

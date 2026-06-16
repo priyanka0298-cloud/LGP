@@ -17,6 +17,7 @@ import {
   LogOut,
   Heart,
   Target,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -65,6 +66,12 @@ const NAV_ITEMS: NavItem[] = [
     label: "Goals",
     icon: Target,
     gradient: "from-amber-400 to-orange-500",
+  },
+  {
+    href: "/reminders",
+    label: "Reminders",
+    icon: Bell,
+    gradient: "from-violet-400 to-purple-500",
   },
   {
     href: "/marketplace",

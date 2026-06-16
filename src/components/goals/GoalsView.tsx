@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Target, Sparkles, Check, Trash2, Pin, Trophy } from "lucide-react";
+import { Plus, Target, Sparkles, Check, Trash2, Pin, Trophy, ChevronDown, ChevronUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -303,19 +303,18 @@ function GoalCard({
   const steps = (goal.ai_steps as AiStep[] | null) ?? [];
   const doneCount = steps.filter(s => s.done).length;
   const isAchieved = goal.status === "achieved";
+  const progress = steps.length > 0 ? goal.progress_percent : 0;
 
   return (
     <motion.div layout transition={{ duration: 0.2 }}>
       <Card className={cn("overflow-hidden transition-shadow hover:shadow-soft", isAchieved && "opacity-75")}>
-        {/* Progress bar strip at top */}
-        {steps.length > 0 && (
-          <div className="h-1 bg-muted">
-            <div
-              className="h-full bg-gradient-to-r from-rose-400 to-pink-500 transition-all duration-500"
-              style={{ width: `${goal.progress_percent}%` }}
-            />
-          </div>
-        )}
+        {/* Progress bar — always visible */}
+        <div className="h-1.5 bg-muted">
+          <div
+            className="h-full bg-gradient-to-r from-rose-400 to-pink-500 transition-all duration-500"
+            style={{ width: `${isAchieved ? 100 : progress}%` }}
+          />
+        </div>
 
         <CardContent className="p-4">
           {/* Main row */}
@@ -331,25 +330,24 @@ function GoalCard({
                     {goal.title}
                   </span>
                   {goal.is_pinned && <Pin className="h-3 w-3 text-primary shrink-0" />}
-                  <span className={cn("text-xs rounded-full px-2 py-0.5 font-medium", STATUS_COLORS[goal.status])}>
-                    {goal.status}
-                  </span>
                 </div>
                 <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                   <span>{HORIZONS.find(h => h.value === goal.time_horizon)?.label}</span>
-                  {steps.length > 0 && <span>{doneCount}/{steps.length} steps</span>}
-                  {goal.progress_percent > 0 && <span>{goal.progress_percent}%</span>}
+                  {steps.length > 0
+                    ? <span>{doneCount}/{steps.length} steps · {progress}%</span>
+                    : !isAchieved && <span className="text-primary/70">tap to add steps</span>
+                  }
+                  {isAchieved && <span className="text-purple-500 font-medium">✓ achieved</span>}
                 </div>
+              </div>
+              {/* Expand chevron */}
+              <div className="mt-1 shrink-0 text-muted-foreground">
+                {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
               </div>
             </button>
 
             {/* Actions */}
-            <div className="flex items-center gap-1 shrink-0">
-              {!isAchieved && goal.progress_percent === 100 && (
-                <Button variant="soft" size="sm" className="h-7 px-2 text-xs" onClick={onAchieve}>
-                  <Trophy className="h-3 w-3 mr-1" /> Done!
-                </Button>
-              )}
+            <div className="flex items-center gap-1 shrink-0 ml-1">
               <button onClick={onPin} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-primary transition-colors">
                 <Pin className="h-3.5 w-3.5" />
               </button>
@@ -359,7 +357,7 @@ function GoalCard({
             </div>
           </div>
 
-          {/* Expanded steps */}
+          {/* Expanded detail */}
           <AnimatePresence>
             {expanded && (
               <motion.div
@@ -385,7 +383,7 @@ function GoalCard({
 
                   {steps.length > 0 && !loadingAI && (
                     <div className="space-y-2">
-                      <p className="text-xs font-semibold text-muted-foreground">Steps</p>
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Steps</p>
                       {steps.map((step, i) => (
                         <button
                           key={i}
@@ -413,6 +411,16 @@ function GoalCard({
                       <Sparkles className="h-3.5 w-3.5" />
                       Generate AI steps
                     </Button>
+                  )}
+
+                  {/* Mark achieved — always available */}
+                  {!isAchieved && (
+                    <div className="pt-1 border-t border-border/40 flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">Finished this goal?</span>
+                      <Button variant="soft" size="sm" className="h-7 px-3 text-xs gap-1.5" onClick={onAchieve}>
+                        <Trophy className="h-3 w-3" /> Mark achieved
+                      </Button>
+                    </div>
                   )}
                 </div>
               </motion.div>

@@ -41,7 +41,7 @@ const CONTACT_OPTIONS = [
   {
     icon: Inbox,
     title: "None of the above?",
-    description: "Just email us — no subject line required.",
+    description: "Reach out about anything at all.",
     label: "hello@softlivi.com",
     href: "mailto:hello@softlivi.com",
   },

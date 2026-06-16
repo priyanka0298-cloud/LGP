@@ -68,9 +68,12 @@ export const metadata: Metadata = {
     title: "Lazy Girl Planner",
   },
   icons: {
-    icon: "/icon.svg",
-    shortcut: "/icon.svg",
-    apple: "/icon.svg",
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    shortcut: "/icon-192.png",
+    apple: "/apple-icon.png",
   },
 };
 

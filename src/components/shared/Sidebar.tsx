@@ -55,12 +55,6 @@ const NAV_ITEMS: NavItem[] = [
     gradient: "from-emerald-400 to-teal-500",
   },
   {
-    href: "/cycle",
-    label: "Cycle",
-    icon: Heart,
-    gradient: "from-pink-400 to-rose-500",
-  },
-  {
     href: "/goals",
     label: "Goals",
     icon: Target,
@@ -78,6 +72,12 @@ const NAV_ITEMS: NavItem[] = [
     icon: ShoppingBag,
     gradient: "from-orange-400 to-amber-500",
     badge: "New",
+  },
+  {
+    href: "/cycle",
+    label: "Cycle",
+    icon: Heart,
+    gradient: "from-pink-400 to-rose-500",
   },
 ];
 

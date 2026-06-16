@@ -312,8 +312,6 @@ export function DashboardContent({
             userId={profile?.id ?? ""}
           />
 
-          {profile?.id && <CycleWidget userId={profile.id} />}
-
           <FoodLogCard userId={profile?.id ?? ""} />
 
           {weeklyPlan && (
@@ -340,6 +338,8 @@ export function DashboardContent({
               </CardContent>
             </Card>
           )}
+
+          {profile?.id && <CycleWidget userId={profile.id} />}
         </div>
       </div>
     </div>

@@ -14,12 +14,6 @@ import { cn } from "@/lib/utils";
 import type { JournalEntry } from "@/types";
 import { MOOD_EMOJIS } from "@/types";
 
-interface JournalViewProps {
-  userId: string;
-  todayEntry: JournalEntry | null;
-  recentEntries: Partial<JournalEntry>[];
-}
-
 const DAILY_PROMPTS = [
   { key: "morning_intention", label: "Morning intention", emoji: "🌅", placeholder: "What's one intention I'm carrying into today?" },
   { key: "top_priorities", label: "Top 3 priorities", emoji: "🎯", placeholder: "What absolutely must happen today? (max 3)" },
@@ -47,15 +41,34 @@ interface FoodEntry {
   what: string;
 }
 
-type Tab = "daily" | "reflection" | "free" | "history";
+type Tab = "daily" | "weekly" | "free" | "history";
 
-export function JournalView({ userId, todayEntry, recentEntries }: JournalViewProps) {
+interface JournalViewProps {
+  userId: string;
+  todayEntry: JournalEntry | null;
+  weeklyEntry: JournalEntry | null;
+  recentEntries: Partial<JournalEntry>[];
+}
+
+// Day of week: 0 = Sun, 1 = Mon. Check-in unlocks Sun + Mon (grace day).
+function getCheckInStatus() {
+  const day = new Date().getDay();
+  const isUnlocked = day === 0 || day === 1;
+  const daysUntilSunday = day === 0 ? 7 : 7 - day; // if today IS Sunday show 7 (next week)
+  return { isUnlocked, daysUntilSunday };
+}
+
+export function JournalView({ userId, todayEntry, weeklyEntry, recentEntries }: JournalViewProps) {
   const [activeTab, setActiveTab] = useState<Tab>("daily");
   const [content, setContent] = useState<Record<string, unknown>>(
     (todayEntry?.content as Record<string, unknown>) ?? {}
   );
+  const [weeklyContent, setWeeklyContent] = useState<Record<string, unknown>>(
+    (weeklyEntry?.content as Record<string, unknown>) ?? {}
+  );
   const [saving, setSaving] = useState(false);
   const [freeWrite, setFreeWrite] = useState("");
+  const { isUnlocked, daysUntilSunday } = getCheckInStatus();
 
   // History state
   const [entries, setEntries] = useState(recentEntries);
@@ -71,17 +84,29 @@ export function JournalView({ userId, todayEntry, recentEntries }: JournalViewPr
   // Sync entries when server re-fetches (after router.refresh())
   useEffect(() => { setEntries(recentEntries); }, [recentEntries]);
 
-  // Accordion state — open the ones that already have content on load
+  // Accordion for daily prompts — pre-open those with existing content
   const [openPrompts, setOpenPrompts] = useState<Set<string>>(() => {
     const initial = (todayEntry?.content as Record<string, unknown>) ?? {};
-    return new Set(
-      [...DAILY_PROMPTS.map((p) => p.key), ...REFLECTION_PROMPTS.map((p) => `refl_${p.key}`)]
-        .filter((k) => initial[k])
-    );
+    return new Set(DAILY_PROMPTS.map((p) => p.key).filter((k) => initial[k]));
+  });
+
+  // Accordion for weekly prompts
+  const [openWeeklyPrompts, setOpenWeeklyPrompts] = useState<Set<string>>(() => {
+    const initial = (weeklyEntry?.content as Record<string, unknown>) ?? {};
+    return new Set(REFLECTION_PROMPTS.map((p) => p.key).filter((k) => initial[k]));
   });
 
   function togglePrompt(key: string) {
     setOpenPrompts((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  function toggleWeeklyPrompt(key: string) {
+    setOpenWeeklyPrompts((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
       else next.add(key);
@@ -144,8 +169,9 @@ export function JournalView({ userId, todayEntry, recentEntries }: JournalViewPr
   async function saveDailyEntry() {
     setSaving(true);
     const today = format(new Date(), "yyyy-MM-dd");
+    // Strip any old refl_* keys that may have been saved in earlier versions
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const contentToSave = content as any;
+    const contentToSave = Object.fromEntries(Object.entries(content).filter(([k]) => !k.startsWith("refl_"))) as any;
 
     // Check-then-insert/update — avoids needing a unique constraint on the table
     const { data: existing } = await supabase
@@ -177,11 +203,43 @@ export function JournalView({ userId, todayEntry, recentEntries }: JournalViewPr
     }
   }
 
+  async function saveWeeklyEntry() {
+    setSaving(true);
+    const today = format(new Date(), "yyyy-MM-dd");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const contentToSave = weeklyContent as any;
+
+    const { data: existing } = await supabase
+      .from("journal_entries")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("entry_date", today)
+      .eq("entry_type", "weekly_reflection")
+      .maybeSingle();
+
+    const { error } = existing
+      ? await supabase.from("journal_entries").update({ content: contentToSave }).eq("id", existing.id)
+      : await supabase.from("journal_entries").insert({
+          user_id: userId,
+          entry_date: today,
+          entry_type: "weekly_reflection",
+          content: contentToSave,
+        });
+
+    setSaving(false);
+    if (error) {
+      toast.error("Couldn't save. Try again?");
+    } else {
+      toast.success("Sunday Reset saved 🌸");
+      router.refresh();
+    }
+  }
+
   const tabs = [
-    { id: "daily" as Tab, label: "Daily Page", emoji: "📔" },
-    { id: "reflection" as Tab, label: "Reflection", emoji: "💭" },
-    { id: "free" as Tab, label: "Free Write", emoji: "✍️" },
-    { id: "history" as Tab, label: "History", emoji: "📚" },
+    { id: "daily" as Tab, label: "Daily Page", emoji: "📔", locked: false },
+    { id: "weekly" as Tab, label: "Sunday Reset", emoji: "🌸", locked: !isUnlocked },
+    { id: "free" as Tab, label: "Free Write", emoji: "✍️", locked: false },
+    { id: "history" as Tab, label: "History", emoji: "📚", locked: false },
   ];
 
   return (
@@ -192,8 +250,14 @@ export function JournalView({ userId, todayEntry, recentEntries }: JournalViewPr
           <h1 className="font-display text-2xl font-bold">Journal</h1>
           <p className="text-sm text-muted-foreground">{format(new Date(), "EEEE, MMMM d, yyyy")}</p>
         </div>
-        {(activeTab === "daily" || activeTab === "reflection") && (
+        {activeTab === "daily" && (
           <Button variant="gradient" size="sm" className="gap-1.5" onClick={saveDailyEntry} disabled={saving}>
+            <Save className="h-3.5 w-3.5" />
+            {saving ? "Saving..." : "Save"}
+          </Button>
+        )}
+        {activeTab === "weekly" && isUnlocked && (
+          <Button variant="gradient" size="sm" className="gap-1.5" onClick={saveWeeklyEntry} disabled={saving}>
             <Save className="h-3.5 w-3.5" />
             {saving ? "Saving..." : "Save"}
           </Button>
@@ -215,6 +279,7 @@ export function JournalView({ userId, todayEntry, recentEntries }: JournalViewPr
           >
             <span className="hidden sm:inline">{tab.emoji}</span>
             {tab.label}
+            {tab.locked && <span className="text-xs opacity-60">🔒</span>}
           </button>
         ))}
       </div>
@@ -268,47 +333,61 @@ export function JournalView({ userId, todayEntry, recentEntries }: JournalViewPr
         </div>
       )}
 
-      {/* Reflection — accordion */}
-      {activeTab === "reflection" && (
-        <div className="space-y-2">
-          <p className="text-xs text-muted-foreground px-1">
-            Open the ones you feel like sitting with today. No pressure to do all of them.
-          </p>
-          {REFLECTION_PROMPTS.map((prompt) => {
-            const stateKey = `refl_${prompt.key}`;
-            const isOpen = openPrompts.has(stateKey);
-            const val = (content[stateKey] as string) ?? "";
-            return (
-              <div key={prompt.key} className="rounded-2xl border border-border/50 bg-card overflow-hidden">
-                <button
-                  onClick={() => togglePrompt(stateKey)}
-                  className="flex w-full items-center justify-between px-4 py-3.5 hover:bg-muted/30 transition-colors text-left"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold">{prompt.q}</p>
-                    {!isOpen && val && (
-                      <p className="text-xs text-muted-foreground truncate mt-0.5">{val}</p>
-                    )}
-                  </div>
-                  {isOpen
-                    ? <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 ml-3" />
-                    : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 ml-3" />}
-                </button>
-                {isOpen && (
-                  <div className="px-4 pb-4">
-                    <Textarea
-                      autoFocus
-                      placeholder="Take your time..."
-                      value={val}
-                      onChange={(e) => setContent({ ...content, [stateKey]: e.target.value })}
-                      className="min-h-[100px] text-sm resize-none border-0 bg-muted/30 focus-visible:ring-1 w-full"
-                    />
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+      {/* Sunday Reset */}
+      {activeTab === "weekly" && (
+        !isUnlocked ? (
+          <div className="rounded-2xl border border-border/50 bg-card p-10 text-center space-y-4">
+            <p className="text-4xl">🌸</p>
+            <div>
+              <p className="font-display text-lg font-semibold">The week isn&apos;t done yet</p>
+              <p className="text-sm text-muted-foreground mt-2 leading-relaxed max-w-xs mx-auto">
+                Your Sunday Reset opens on Sunday evening. Spend the week living — come back then (or Monday, no rush) to sit with it.
+              </p>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {daysUntilSunday === 1 ? "Tomorrow 🌙" : `${daysUntilSunday} days away`}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground px-1">
+              Open the ones you feel like sitting with. No pressure to do all of them 🌿
+            </p>
+            {REFLECTION_PROMPTS.map((prompt) => {
+              const isOpen = openWeeklyPrompts.has(prompt.key);
+              const val = (weeklyContent[prompt.key] as string) ?? "";
+              return (
+                <div key={prompt.key} className="rounded-2xl border border-border/50 bg-card overflow-hidden">
+                  <button
+                    onClick={() => toggleWeeklyPrompt(prompt.key)}
+                    className="flex w-full items-center justify-between px-4 py-3.5 hover:bg-muted/30 transition-colors text-left"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold">{prompt.q}</p>
+                      {!isOpen && val && (
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">{val}</p>
+                      )}
+                    </div>
+                    {isOpen
+                      ? <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 ml-3" />
+                      : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 ml-3" />}
+                  </button>
+                  {isOpen && (
+                    <div className="px-4 pb-4">
+                      <Textarea
+                        autoFocus
+                        placeholder="Take your time..."
+                        value={val}
+                        onChange={(e) => setWeeklyContent({ ...weeklyContent, [prompt.key]: e.target.value })}
+                        className="min-h-[100px] text-sm resize-none border-0 bg-muted/30 focus-visible:ring-1 w-full"
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )
       )}
 
       {/* Free write */}
@@ -367,7 +446,7 @@ export function JournalView({ userId, todayEntry, recentEntries }: JournalViewPr
               const typeLabels: Record<string, string> = {
                 daily: "📔 Daily",
                 free_write: "✍️ Free write",
-                weekly_reflection: "💭 Reflection",
+                weekly_reflection: "🌸 Sunday Reset",
                 food_log: "🥗 Food log",
               };
               const typeSummary = dayEntries
@@ -489,7 +568,8 @@ export function JournalView({ userId, todayEntry, recentEntries }: JournalViewPr
                                 {entry.entry_type === "weekly_reflection" && (
                                   <div className="space-y-3">
                                     {REFLECTION_PROMPTS.map((prompt) => {
-                                      const val = entryContent[`refl_${prompt.key}`] as string | undefined;
+                                      // Support both new (plain key) and old (refl_-prefixed) formats
+                                      const val = (entryContent[prompt.key] ?? entryContent[`refl_${prompt.key}`]) as string | undefined;
                                       if (!val) return null;
                                       return (
                                         <div key={prompt.key}>

@@ -49,6 +49,7 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
   // AI detail step in the form
   const [showAIDetail, setShowAIDetail] = useState(false);
   const [aiDetail, setAiDetail] = useState("");
+  const [aiDetailDeadline, setAiDetailDeadline] = useState("");
 
   function resetForm() {
     setTitle("");
@@ -58,6 +59,7 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
     setTargetDate("");
     setShowAIDetail(false);
     setAiDetail("");
+    setAiDetailDeadline("");
     setShowForm(false);
   }
 
@@ -66,9 +68,10 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
     setSaving(true);
 
     const catEmoji = CATEGORIES.find(c => c.value === category)?.emoji ?? "✨";
+    const finalDeadline = aiDetailDeadline || targetDate || null;
     const { data, error } = await supabase
       .from("goals")
-      .insert({ user_id: userId, title: title.trim(), why: why.trim() || null, category, time_horizon: horizon, emoji: catEmoji, target_date: targetDate || null })
+      .insert({ user_id: userId, title: title.trim(), why: why.trim() || null, category, time_horizon: horizon, emoji: catEmoji, target_date: finalDeadline })
       .select()
       .single();
 
@@ -108,7 +111,13 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
     setExpandedId(data.id);
   }
 
-  async function breakdownGoal(goal: Goal, extraDetail = "") {
+  async function breakdownGoal(goal: Goal, extraDetail = "", deadline = "") {
+    // If a deadline was provided in the detail step, save it first
+    const effectiveDeadline = deadline || goal.target_date || null;
+    if (deadline && deadline !== goal.target_date) {
+      setGoals(prev => prev.map(g => g.id === goal.id ? { ...g, target_date: deadline } : g));
+      await supabase.from("goals").update({ target_date: deadline }).eq("id", goal.id);
+    }
     setLoadingAI(goal.id);
     try {
       const res = await fetch("/api/ai/goal-breakdown", {
@@ -119,7 +128,7 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
           title: goal.title,
           why: goal.why,
           timeHorizon: goal.time_horizon,
-          targetDate: goal.target_date,
+          targetDate: effectiveDeadline,
           extraDetail: extraDetail.trim() || undefined,
         }),
       });
@@ -292,12 +301,23 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
                     <p className="text-xs text-muted-foreground">
                       The more context you give, the more accurate your steps will be.
                     </p>
+                    <div className="flex items-center gap-2">
+                      <CalendarDays className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <input
+                        type="date"
+                        value={aiDetailDeadline || targetDate}
+                        onChange={e => setAiDetailDeadline(e.target.value)}
+                        min={new Date().toISOString().split("T")[0]}
+                        className="rounded-xl border border-input bg-muted/30 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary text-muted-foreground [&:not([value=''])]:text-foreground"
+                      />
+                      <span className="text-xs text-muted-foreground">Deadline (if any)</span>
+                    </div>
                     <textarea
                       autoFocus
-                      placeholder={`e.g. I have about 30 minutes a day, mostly evenings. I work full time and want to take this slowly without burning out.${targetDate ? ` My deadline is ${new Date(targetDate).toLocaleDateString("en-US", { month: "long", day: "numeric" })}.` : ""}`}
+                      placeholder="e.g. I have about 30 minutes a day, mostly evenings. I work full time and want to take this slowly without burning out."
                       value={aiDetail}
                       onChange={e => setAiDetail(e.target.value)}
-                      rows={4}
+                      rows={3}
                       className="w-full rounded-xl border border-input bg-muted/30 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none"
                     />
                     <div className="flex gap-2">
@@ -346,7 +366,7 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
               loadingAI={loadingAI === goal.id}
               onToggleExpand={() => setExpandedId(expandedId === goal.id ? null : goal.id)}
               onToggleStep={idx => toggleStep(goal, idx)}
-              onBreakdown={detail => breakdownGoal(goal, detail)}
+              onBreakdown={(detail, deadline) => breakdownGoal(goal, detail, deadline)}
               onAddStep={stepTitle => addManualStep(goal, stepTitle)}
               onAchieve={() => markAchieved(goal)}
               onDelete={() => deleteGoal(goal.id)}
@@ -394,7 +414,7 @@ function GoalCard({
   loadingAI: boolean;
   onToggleExpand: () => void;
   onToggleStep: (idx: number) => void;
-  onBreakdown: (detail: string) => void;
+  onBreakdown: (detail: string, deadline: string) => void;
   onAddStep: (title: string) => void;
   onAchieve: () => void;
   onDelete: () => void;
@@ -409,6 +429,7 @@ function GoalCard({
   const [showStepInput, setShowStepInput] = useState(false);
   const [showAIDetail, setShowAIDetail] = useState(false);
   const [aiDetail, setAiDetail] = useState("");
+  const [aiDeadline, setAiDeadline] = useState(goal.target_date ?? "");
 
   function submitStep() {
     if (!newStep.trim()) return;
@@ -417,7 +438,7 @@ function GoalCard({
   }
 
   function submitAI() {
-    onBreakdown(aiDetail);
+    onBreakdown(aiDetail, aiDeadline);
     setShowAIDetail(false);
     setAiDetail("");
   }
@@ -532,11 +553,22 @@ function GoalCard({
                       {showAIDetail ? (
                         <div className="space-y-2 rounded-xl bg-muted/40 border border-border/50 p-3">
                           <p className="text-xs text-muted-foreground">
-                            Tell us a bit more — your schedule, how much time you have, any constraints. The more detail, the better your steps.
+                            The more context you give, the more accurate your steps will be.
                           </p>
+                          <div className="flex items-center gap-2">
+                            <CalendarDays className="h-4 w-4 text-muted-foreground shrink-0" />
+                            <input
+                              type="date"
+                              value={aiDeadline}
+                              onChange={e => setAiDeadline(e.target.value)}
+                              min={new Date().toISOString().split("T")[0]}
+                              className="rounded-xl border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary text-muted-foreground [&:not([value=''])]:text-foreground"
+                            />
+                            <span className="text-xs text-muted-foreground">Deadline (if any)</span>
+                          </div>
                           <textarea
                             autoFocus
-                            placeholder={`e.g. I have 20 mins a day, weekday evenings only. I want to take this slowly.${goal.target_date ? ` Deadline: ${new Date(goal.target_date).toLocaleDateString("en-US", { month: "long", day: "numeric" })}.` : ""}`}
+                            placeholder="e.g. I have 20 mins a day, weekday evenings only. I want to take this slowly."
                             value={aiDetail}
                             onChange={e => setAiDetail(e.target.value)}
                             rows={3}

@@ -6,7 +6,6 @@ import { ChevronLeft, ChevronRight, Sparkles, Plus, Target } from "lucide-react"
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { DayColumn } from "./DayColumn";
 import type { Task, WeeklyPlan, Goal } from "@/types";
 import { TASK_CATEGORY_CONFIG } from "@/types";
@@ -34,8 +33,6 @@ export function WeeklyPlannerView({
   const [weekStart, setWeekStart] = useState(initialWeekStart);
   const [weekEnd, setWeekEnd] = useState(initialWeekEnd);
   const [tasksByDate, setTasksByDate] = useState(initialTasksByDate);
-  const [theme, setTheme] = useState(weeklyPlan?.theme ?? "");
-  const [editingMeta, setEditingMeta] = useState(false);
   const supabase = createClient();
 
   const weekDays = Array.from({ length: 7 }, (_, i) => {
@@ -59,19 +56,6 @@ export function WeeklyPlannerView({
       ...prev,
       [dateStr]: [...(prev[dateStr] ?? []), task],
     }));
-  }
-
-  async function saveMeta() {
-    const weekStartStr = format(weekStart, "yyyy-MM-dd");
-    const weekEndStr = format(weekEnd, "yyyy-MM-dd");
-    await supabase.from("weekly_plans").upsert({
-      user_id: userId,
-      week_start: weekStartStr,
-      week_end: weekEndStr,
-      theme: theme || null,
-    }, { onConflict: "user_id,week_start" });
-    setEditingMeta(false);
-    toast.success("Week theme saved 🌸");
   }
 
   return (
@@ -98,35 +82,6 @@ export function WeeklyPlannerView({
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
-      </div>
-
-      {/* Week meta */}
-      <div className="rounded-2xl bg-gradient-to-r from-rose-50 to-purple-50 dark:from-rose-950/30 dark:to-purple-950/20 border border-border/40 p-4">
-        {editingMeta ? (
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Input
-              placeholder="Weekly theme (e.g. 'Slow down')"
-              value={theme}
-              onChange={(e) => setTheme(e.target.value)}
-              className="text-sm"
-            />
-            <Button variant="gradient" size="sm" onClick={saveMeta}>Save</Button>
-            <Button variant="ghost" size="sm" onClick={() => setEditingMeta(false)}>Cancel</Button>
-          </div>
-        ) : (
-          <div className="flex items-center justify-between">
-            <div>
-              {theme ? (
-                <p className="text-sm font-semibold">Week theme: {theme}</p>
-              ) : (
-                <p className="text-sm text-muted-foreground">Set a theme for your week</p>
-              )}
-            </div>
-            <Button variant="ghost" size="sm" onClick={() => setEditingMeta(true)} className="text-xs">
-              {theme ? "Edit" : "+ Add theme"}
-            </Button>
-          </div>
-        )}
       </div>
 
       {/* Progress bar */}

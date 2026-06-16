@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { format } from "date-fns";
-import { Sparkles, Flame, Target, Sun, TrendingUp, Plus, RefreshCw } from "lucide-react";
+import { Sparkles, Flame, Target, Sun, TrendingUp, Plus, RefreshCw, Pencil, Trash2, X, Check as CheckIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -66,6 +66,16 @@ export function DashboardContent({
     ? Math.round((habits.filter((h) => h.completedToday).length / habits.length) * 100)
     : 0;
   const streakDays = Math.max(...habits.map((h) => h.streak_current), 0);
+
+  async function updateTask(taskId: string, updates: { title?: string; category?: string }) {
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates } : t));
+    await supabase.from("tasks").update(updates).eq("id", taskId);
+  }
+
+  async function deleteTask(taskId: string) {
+    setTasks(prev => prev.filter(t => t.id !== taskId));
+    await supabase.from("tasks").delete().eq("id", taskId);
+  }
 
   async function completeTask(taskId: string) {
     const { error } = await supabase
@@ -275,6 +285,8 @@ export function DashboardContent({
                             key={task.id}
                             task={task}
                             onComplete={() => completeTask(task.id)}
+                            onUpdate={(updates) => updateTask(task.id, updates)}
+                            onDelete={() => deleteTask(task.id)}
                           />
                         ))}
                       </div>
@@ -308,6 +320,8 @@ export function DashboardContent({
             habits={habits}
             onToggle={toggleHabit}
             onAdded={(habit) => setHabits((p) => [...p, habit])}
+            onUpdated={(habit) => setHabits((p) => p.map(h => h.id === habit.id ? habit : h))}
+            onDeleted={(id) => setHabits((p) => p.filter(h => h.id !== id))}
             subscription={subscription}
             userId={profile?.id ?? ""}
           />
@@ -346,10 +360,54 @@ export function DashboardContent({
   );
 }
 
-function TaskItem({ task, onComplete }: { task: Task; onComplete: () => void }) {
+function TaskItem({ task, onComplete, onUpdate, onDelete }: {
+  task: Task;
+  onComplete: () => void;
+  onUpdate: (updates: { title?: string; category?: string }) => void;
+  onDelete: () => void;
+}) {
   const isDone = task.status === "done";
   const tags = (task.tags as string[] | null) ?? [];
   const context = tags.includes("work") ? "💼" : tags.includes("personal") ? "🏠" : null;
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(task.title);
+  const [editCat, setEditCat] = useState(task.category as TaskCategory);
+
+  function save() {
+    if (!editTitle.trim()) return;
+    onUpdate({ title: editTitle.trim(), category: editCat });
+    setEditing(false);
+  }
+
+  if (editing) {
+    return (
+      <div className="rounded-xl border border-primary/20 bg-muted/30 p-3 space-y-2">
+        <input
+          autoFocus
+          value={editTitle}
+          onChange={e => setEditTitle(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") save(); if (e.key === "Escape") setEditing(false); }}
+          className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+        />
+        <div className="flex gap-1.5 flex-wrap">
+          {(["must_do", "should_do", "if_energy"] as TaskCategory[]).map(cat => {
+            const config = TASK_CATEGORY_CONFIG[cat];
+            return (
+              <button key={cat} onClick={() => setEditCat(cat)}
+                className={cn("rounded-full border px-2.5 py-0.5 text-xs font-medium transition-all",
+                  editCat === cat ? `${config.color} ${config.bgColor} border-current` : "border-border text-muted-foreground")}>
+                {config.emoji} {config.label}
+              </button>
+            );
+          })}
+        </div>
+        <div className="flex gap-2">
+          <Button size="sm" variant="gradient" onClick={save} disabled={!editTitle.trim()} className="h-7 px-3 text-xs gap-1"><CheckIcon className="h-3 w-3" /> Save</Button>
+          <Button size="sm" variant="ghost" onClick={() => setEditing(false)} className="h-7 px-3 text-xs">Cancel</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cn(
@@ -361,27 +419,27 @@ function TaskItem({ task, onComplete }: { task: Task; onComplete: () => void }) 
         disabled={isDone}
         className={cn(
           "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all",
-          isDone
-            ? "border-primary bg-primary"
-            : "border-muted-foreground/30 hover:border-primary group-hover:border-primary/50"
+          isDone ? "border-primary bg-primary" : "border-muted-foreground/30 hover:border-primary group-hover:border-primary/50"
         )}
-        aria-label={isDone ? "Completed" : "Mark complete"}
       >
-        {isDone && (
-          <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 8 8" fill="none">
-            <path d="M1.5 4L3 5.5L6.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        )}
+        {isDone && <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 8 8" fill="none"><path d="M1.5 4L3 5.5L6.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>}
       </button>
       <div className="flex-1 min-w-0">
         <p className={cn("text-sm font-medium truncate", isDone && "line-through text-muted-foreground")}>
           {task.emoji} {task.title}
         </p>
-        {task.estimated_minutes && (
-          <p className="text-xs text-muted-foreground">~{task.estimated_minutes} min</p>
-        )}
       </div>
       {context && <span className="text-sm shrink-0">{context}</span>}
+      {!isDone && (
+        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button onClick={() => setEditing(true)} className="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-primary transition-colors">
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+          <button onClick={onDelete} className="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-red-500 transition-colors">
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

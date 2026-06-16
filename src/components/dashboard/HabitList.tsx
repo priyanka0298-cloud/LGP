@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { Plus, Flame, Lock, X } from "lucide-react";
+import { Plus, Flame, Lock, X, Pencil, Trash2, Check } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -14,6 +14,8 @@ interface HabitListProps {
   habits: Array<Habit & { completedToday: boolean }>;
   onToggle: (habitId: string, completed: boolean) => Promise<void>;
   onAdded?: (habit: Habit & { completedToday: boolean }) => void;
+  onUpdated?: (habit: Habit & { completedToday: boolean }) => void;
+  onDeleted?: (habitId: string) => void;
   subscription: Subscription | null;
   userId: string;
 }
@@ -22,7 +24,7 @@ const FREE_LIMIT = 5;
 
 const QUICK_EMOJIS = ["✨", "💧", "🏃", "📚", "🧘", "🥗", "😴", "🌿", "💪", "🎯"];
 
-export function HabitList({ habits, onToggle, onAdded, subscription, userId }: HabitListProps) {
+export function HabitList({ habits, onToggle, onAdded, onUpdated, onDeleted, subscription, userId }: HabitListProps) {
   const isPremium = subscription?.plan !== "free";
   const completedCount = habits.filter((h) => h.completedToday).length;
   const progress = habits.length ? (completedCount / habits.length) * 100 : 0;
@@ -99,7 +101,12 @@ export function HabitList({ habits, onToggle, onAdded, subscription, userId }: H
         ) : (
           habits.map((habit) => (
             <div key={habit.id}>
-              <HabitItem habit={habit} onToggle={onToggle} />
+              <HabitItem
+                habit={habit}
+                onToggle={onToggle}
+                onUpdated={onUpdated}
+                onDeleted={onDeleted}
+              />
             </div>
           ))
         )}
@@ -151,13 +158,18 @@ export function HabitList({ habits, onToggle, onAdded, subscription, userId }: H
 }
 
 function HabitItem({
-  habit,
-  onToggle,
+  habit, onToggle, onUpdated, onDeleted,
 }: {
   habit: Habit & { completedToday: boolean };
   onToggle: (id: string, completed: boolean) => Promise<void>;
+  onUpdated?: (h: Habit & { completedToday: boolean }) => void;
+  onDeleted?: (id: string) => void;
 }) {
   const [loading, setLoading] = React.useState(false);
+  const [editing, setEditing] = React.useState(false);
+  const [editName, setEditName] = React.useState(habit.name);
+  const [editEmoji, setEditEmoji] = React.useState(habit.emoji ?? "✨");
+  const supabase = createClient();
 
   async function handleToggle() {
     setLoading(true);
@@ -165,49 +177,77 @@ function HabitItem({
     setLoading(false);
   }
 
-  return (
-    <button
-      onClick={handleToggle}
-      disabled={loading}
-      className={cn(
-        "flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-all duration-200 group",
-        habit.completedToday
-          ? "border-emerald-200 bg-emerald-50 dark:border-emerald-900/30 dark:bg-emerald-950/20"
-          : "border-border hover:border-primary/30 hover:bg-muted/50"
-      )}
-    >
-      {/* Checkbox */}
-      <div
-        className={cn(
-          "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200",
-          habit.completedToday
-            ? "border-emerald-500 bg-emerald-500"
-            : "border-muted-foreground/30 group-hover:border-primary/50"
-        )}
-      >
-        {habit.completedToday && (
-          <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 8 8" fill="none">
-            <path d="M1.5 4L3 5.5L6.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        )}
-      </div>
+  async function saveEdit() {
+    if (!editName.trim()) return;
+    await supabase.from("habits").update({ name: editName.trim(), emoji: editEmoji }).eq("id", habit.id);
+    onUpdated?.({ ...habit, name: editName.trim(), emoji: editEmoji });
+    setEditing(false);
+  }
 
-      {/* Emoji + name */}
+  async function handleDelete() {
+    await supabase.from("habits").delete().eq("id", habit.id);
+    onDeleted?.(habit.id);
+  }
+
+  if (editing) {
+    return (
+      <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2">
+        <div className="flex gap-2">
+          <input
+            autoFocus
+            value={editName}
+            onChange={e => setEditName(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditing(false); }}
+            className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+          />
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {QUICK_EMOJIS.map(e => (
+            <button key={e} onClick={() => setEditEmoji(e)}
+              className={cn("text-lg rounded-lg p-1 transition-all", editEmoji === e ? "bg-primary/20 ring-1 ring-primary" : "hover:bg-muted")}>
+              {e}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <button onClick={saveEdit} className="flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground">
+            <Check className="h-3 w-3" /> Save
+          </button>
+          <button onClick={() => setEditing(false)} className="rounded-lg px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground">Cancel</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn(
+      "flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 transition-all duration-200 group",
+      habit.completedToday
+        ? "border-emerald-200 bg-emerald-50 dark:border-emerald-900/30 dark:bg-emerald-950/20"
+        : "border-border hover:border-primary/30 hover:bg-muted/50"
+    )}>
+      <button onClick={handleToggle} disabled={loading}
+        className={cn("flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200",
+          habit.completedToday ? "border-emerald-500 bg-emerald-500" : "border-muted-foreground/30 group-hover:border-primary/50")}>
+        {habit.completedToday && <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 8 8" fill="none"><path d="M1.5 4L3 5.5L6.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+      </button>
       <span className="text-base shrink-0">{habit.emoji ?? "✨"}</span>
-      <span className={cn(
-        "flex-1 text-sm font-medium truncate",
-        habit.completedToday && "line-through text-muted-foreground"
-      )}>
+      <span className={cn("flex-1 text-sm font-medium truncate text-left", habit.completedToday && "line-through text-muted-foreground")}>
         {habit.name}
       </span>
-
-      {/* Streak */}
       {habit.streak_current > 1 && (
         <span className="flex items-center gap-0.5 text-xs text-orange-500 font-semibold shrink-0">
-          <Flame className="h-3 w-3" />
-          {habit.streak_current}
+          <Flame className="h-3 w-3" />{habit.streak_current}
         </span>
       )}
-    </button>
+      <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+        <button onClick={() => setEditing(true)} className="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-primary transition-colors">
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
+        <button onClick={handleDelete} className="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-red-500 transition-colors">
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </div>
   );
 }

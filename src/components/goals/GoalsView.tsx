@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Target, Sparkles, Check, Trash2, Pin, Trophy, ChevronDown, ChevronUp, PenLine, CalendarDays } from "lucide-react";
+import { Plus, Target, Sparkles, Check, Trash2, Pin, Trophy, ChevronDown, ChevronUp, PenLine, CalendarDays, Pencil, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -109,6 +109,12 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
     resetForm();
     setSaving(false);
     setExpandedId(data.id);
+  }
+
+  async function updateGoal(id: string, updates: { title?: string; why?: string | null; category?: string; time_horizon?: string; target_date?: string | null; emoji?: string }) {
+    setGoals(prev => prev.map(g => g.id === id ? { ...g, ...updates } : g));
+    await supabase.from("goals").update(updates).eq("id", id);
+    toast.success("Goal updated");
   }
 
   async function breakdownGoal(goal: Goal, extraDetail = "", deadline = "") {
@@ -368,6 +374,7 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
               onToggleStep={idx => toggleStep(goal, idx)}
               onBreakdown={(detail, deadline) => breakdownGoal(goal, detail, deadline)}
               onAddStep={stepTitle => addManualStep(goal, stepTitle)}
+              onUpdate={updates => updateGoal(goal.id, updates)}
               onAchieve={() => markAchieved(goal)}
               onDelete={() => deleteGoal(goal.id)}
               onPin={() => togglePin(goal)}
@@ -393,6 +400,7 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
                 onToggleStep={idx => toggleStep(goal, idx)}
                 onBreakdown={() => {}}
                 onAddStep={() => {}}
+                onUpdate={() => {}}
                 onAchieve={() => {}}
                 onDelete={() => deleteGoal(goal.id)}
                 onPin={() => togglePin(goal)}
@@ -407,7 +415,7 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
 
 function GoalCard({
   goal, expanded, loadingAI,
-  onToggleExpand, onToggleStep, onBreakdown, onAddStep, onAchieve, onDelete, onPin,
+  onToggleExpand, onToggleStep, onBreakdown, onAddStep, onUpdate, onAchieve, onDelete, onPin,
 }: {
   goal: Goal;
   expanded: boolean;
@@ -416,6 +424,7 @@ function GoalCard({
   onToggleStep: (idx: number) => void;
   onBreakdown: (detail: string, deadline: string) => void;
   onAddStep: (title: string) => void;
+  onUpdate: (updates: { title?: string; why?: string | null; category?: string; time_horizon?: string; target_date?: string | null; emoji?: string }) => void;
   onAchieve: () => void;
   onDelete: () => void;
   onPin: () => void;
@@ -430,6 +439,12 @@ function GoalCard({
   const [showAIDetail, setShowAIDetail] = useState(false);
   const [aiDetail, setAiDetail] = useState("");
   const [aiDeadline, setAiDeadline] = useState(goal.target_date ?? "");
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(goal.title);
+  const [editWhy, setEditWhy] = useState(goal.why ?? "");
+  const [editCategory, setEditCategory] = useState(goal.category);
+  const [editHorizon, setEditHorizon] = useState(goal.time_horizon);
+  const [editDeadline, setEditDeadline] = useState(goal.target_date ?? "");
 
   function submitStep() {
     if (!newStep.trim()) return;
@@ -441,6 +456,20 @@ function GoalCard({
     onBreakdown(aiDetail, aiDeadline);
     setShowAIDetail(false);
     setAiDetail("");
+  }
+
+  function saveEdit() {
+    if (!editTitle.trim()) return;
+    const catEmoji = CATEGORIES.find(c => c.value === editCategory)?.emoji ?? goal.emoji ?? "✨";
+    onUpdate({
+      title: editTitle.trim(),
+      why: editWhy.trim() || null,
+      category: editCategory,
+      time_horizon: editHorizon,
+      target_date: editDeadline || null,
+      emoji: catEmoji,
+    });
+    setIsEditing(false);
   }
 
   return (
@@ -493,11 +522,73 @@ function GoalCard({
               <button onClick={onPin} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-primary transition-colors">
                 <Pin className="h-3.5 w-3.5" />
               </button>
+              <button onClick={() => setIsEditing(v => !v)} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-primary transition-colors">
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
               <button onClick={onDelete} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-red-500 transition-colors">
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
             </div>
           </div>
+
+          {/* Inline edit form */}
+          <AnimatePresence>
+            {isEditing && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="mt-3 pt-3 border-t border-border/40 space-y-2">
+                  <input
+                    autoFocus
+                    value={editTitle}
+                    onChange={e => setEditTitle(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setIsEditing(false); }}
+                    className="w-full rounded-xl border border-input bg-muted/30 px-3 py-2 text-sm font-medium focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                  <textarea
+                    placeholder="Why does this matter? (optional)"
+                    value={editWhy}
+                    onChange={e => setEditWhy(e.target.value)}
+                    rows={2}
+                    className="w-full rounded-xl border border-input bg-muted/30 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                  />
+                  <div className="flex gap-1.5 flex-wrap">
+                    {CATEGORIES.map(c => (
+                      <button key={c.value} onClick={() => setEditCategory(c.value)}
+                        className={cn("rounded-full px-2.5 py-0.5 text-xs font-medium border transition-all",
+                          editCategory === c.value ? "bg-primary text-primary-foreground border-primary" : "bg-muted border-border text-muted-foreground hover:border-primary/50")}>
+                        {c.emoji} {c.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {HORIZONS.map(h => (
+                      <button key={h.value} onClick={() => setEditHorizon(h.value)}
+                        className={cn("rounded-full px-2.5 py-0.5 text-xs font-medium border transition-all",
+                          editHorizon === h.value ? "bg-primary text-primary-foreground border-primary" : "bg-muted border-border text-muted-foreground hover:border-primary/50")}>
+                        {h.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CalendarDays className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <input type="date" value={editDeadline} onChange={e => setEditDeadline(e.target.value)}
+                      min={new Date().toISOString().split("T")[0]}
+                      className="rounded-xl border border-input bg-muted/30 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary text-muted-foreground [&:not([value=''])]:text-foreground" />
+                    {editDeadline && <button onClick={() => setEditDeadline("")} className="text-xs text-muted-foreground hover:text-red-400"><X className="h-3.5 w-3.5" /></button>}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="gradient" onClick={saveEdit} disabled={!editTitle.trim()} className="h-7 px-3 text-xs">Save</Button>
+                    <Button size="sm" variant="ghost" onClick={() => setIsEditing(false)} className="h-7 px-3 text-xs">Cancel</Button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Expanded detail */}
           <AnimatePresence>

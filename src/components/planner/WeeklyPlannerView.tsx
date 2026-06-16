@@ -58,6 +58,13 @@ export function WeeklyPlannerView({
     }));
   }
 
+  function handleTaskDeleted(dateStr: string, taskId: string) {
+    setTasksByDate((prev) => ({
+      ...prev,
+      [dateStr]: (prev[dateStr] ?? []).filter(t => t.id !== taskId),
+    }));
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -109,6 +116,7 @@ export function WeeklyPlannerView({
               userId={userId}
               onTaskUpdate={(t) => handleTaskUpdate(dateStr, t)}
               onTaskAdded={(t) => handleTaskAdded(dateStr, t)}
+              onTaskDeleted={(id) => handleTaskDeleted(dateStr, id)}
             />
           );
         })}

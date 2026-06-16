@@ -16,6 +16,7 @@ import {
   ChevronRight,
   LogOut,
   Heart,
+  Target,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -58,6 +59,12 @@ const NAV_ITEMS: NavItem[] = [
     label: "Cycle",
     icon: Heart,
     gradient: "from-pink-400 to-rose-500",
+  },
+  {
+    href: "/goals",
+    label: "Goals",
+    icon: Target,
+    gradient: "from-amber-400 to-orange-500",
   },
   {
     href: "/marketplace",

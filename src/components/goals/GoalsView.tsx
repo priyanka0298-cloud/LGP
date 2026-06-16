@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Target, Sparkles, Check, Trash2, Pin, Trophy, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Target, Sparkles, Check, Trash2, Pin, Trophy, ChevronDown, ChevronUp, PenLine } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -53,7 +53,7 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
   const [horizon, setHorizon] = useState("monthly");
   const [saving, setSaving] = useState(false);
 
-  async function createGoal() {
+  async function createGoal(useAI: boolean) {
     if (!title.trim()) return;
     setSaving(true);
 
@@ -80,8 +80,7 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
     setSaving(false);
     setExpandedId(data.id);
 
-    // Auto-trigger AI breakdown
-    breakdownGoal(data);
+    if (useAI) breakdownGoal(data);
   }
 
   async function breakdownGoal(goal: Goal) {
@@ -103,6 +102,13 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
     setLoadingAI(null);
   }
 
+  async function addManualStep(goal: Goal, stepTitle: string) {
+    const steps = (goal.ai_steps as AiStep[] | null) ?? [];
+    const updated = [...steps, { title: stepTitle.trim(), done: false }];
+    setGoals(prev => prev.map(g => g.id === goal.id ? { ...g, ai_steps: updated } : g));
+    await supabase.from("goals").update({ ai_steps: updated }).eq("id", goal.id);
+  }
+
   async function toggleStep(goal: Goal, idx: number) {
     const steps = (goal.ai_steps as AiStep[] | null) ?? [];
     const updated = steps.map((s, i) => i === idx ? { ...s, done: !s.done } : s);
@@ -110,7 +116,6 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
     const progress = steps.length > 0 ? Math.round((doneCount / steps.length) * 100) : 0;
 
     setGoals(prev => prev.map(g => g.id === goal.id ? { ...g, ai_steps: updated, progress_percent: progress } : g));
-
     await supabase.from("goals").update({ ai_steps: updated, progress_percent: progress }).eq("id", goal.id);
   }
 
@@ -169,11 +174,11 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
                   placeholder="e.g. Launch my Etsy shop, Run a 5K, Read 12 books..."
                   value={title}
                   onChange={e => setTitle(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && createGoal()}
+                  onKeyDown={e => e.key === "Enter" && createGoal(true)}
                   className="w-full rounded-xl border border-input bg-muted/30 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                 />
                 <textarea
-                  placeholder="Why does this matter to you? (optional — but it helps the AI give better steps)"
+                  placeholder="Why does this matter to you? (optional)"
                   value={why}
                   onChange={e => setWhy(e.target.value)}
                   rows={2}
@@ -211,12 +216,33 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
                     </button>
                   ))}
                 </div>
-                <div className="flex gap-2 pt-1">
-                  <Button variant="gradient" size="sm" onClick={createGoal} disabled={saving || !title.trim()} className="gap-1.5">
-                    <Sparkles className="h-3.5 w-3.5" />
-                    {saving ? "Saving..." : "Save & get AI steps"}
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => setShowForm(false)}>Cancel</Button>
+
+                {/* Two save options */}
+                <div className="pt-1 space-y-2">
+                  <p className="text-xs text-muted-foreground">How do you want to build out your steps?</p>
+                  <div className="flex gap-2 flex-wrap">
+                    <Button
+                      variant="gradient"
+                      size="sm"
+                      onClick={() => createGoal(true)}
+                      disabled={saving || !title.trim()}
+                      className="gap-1.5"
+                    >
+                      <Sparkles className="h-3.5 w-3.5" />
+                      {saving ? "Saving..." : "Let AI plan it"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => createGoal(false)}
+                      disabled={saving || !title.trim()}
+                      className="gap-1.5"
+                    >
+                      <PenLine className="h-3.5 w-3.5" />
+                      {saving ? "Saving..." : "I'll add steps myself"}
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => setShowForm(false)}>Cancel</Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -230,7 +256,7 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
           <div className="text-5xl mb-4">🌱</div>
           <h2 className="font-display text-xl font-semibold mb-2">No goals yet</h2>
           <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
-            Add a goal and the AI will break it into tiny, doable steps. No hustle required.
+            Add a goal and break it into steps — with AI or on your own. No hustle required.
           </p>
           <Button variant="gradient" onClick={() => setShowForm(true)} className="gap-2 shadow-glow">
             <Plus className="h-4 w-4" /> Set your first goal
@@ -250,6 +276,7 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
               onToggleExpand={() => setExpandedId(expandedId === goal.id ? null : goal.id)}
               onToggleStep={idx => toggleStep(goal, idx)}
               onBreakdown={() => breakdownGoal(goal)}
+              onAddStep={stepTitle => addManualStep(goal, stepTitle)}
               onAchieve={() => markAchieved(goal)}
               onDelete={() => deleteGoal(goal.id)}
               onPin={() => togglePin(goal)}
@@ -274,6 +301,7 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
                 onToggleExpand={() => setExpandedId(expandedId === goal.id ? null : goal.id)}
                 onToggleStep={idx => toggleStep(goal, idx)}
                 onBreakdown={() => {}}
+                onAddStep={() => {}}
                 onAchieve={() => {}}
                 onDelete={() => deleteGoal(goal.id)}
                 onPin={() => togglePin(goal)}
@@ -288,7 +316,7 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
 
 function GoalCard({
   goal, expanded, loadingAI,
-  onToggleExpand, onToggleStep, onBreakdown, onAchieve, onDelete, onPin,
+  onToggleExpand, onToggleStep, onBreakdown, onAddStep, onAchieve, onDelete, onPin,
 }: {
   goal: Goal;
   expanded: boolean;
@@ -296,6 +324,7 @@ function GoalCard({
   onToggleExpand: () => void;
   onToggleStep: (idx: number) => void;
   onBreakdown: () => void;
+  onAddStep: (title: string) => void;
   onAchieve: () => void;
   onDelete: () => void;
   onPin: () => void;
@@ -305,10 +334,19 @@ function GoalCard({
   const isAchieved = goal.status === "achieved";
   const progress = steps.length > 0 ? goal.progress_percent : 0;
 
+  const [newStep, setNewStep] = useState("");
+  const [showStepInput, setShowStepInput] = useState(false);
+
+  function submitStep() {
+    if (!newStep.trim()) return;
+    onAddStep(newStep);
+    setNewStep("");
+  }
+
   return (
     <motion.div layout transition={{ duration: 0.2 }}>
       <Card className={cn("overflow-hidden transition-shadow hover:shadow-soft", isAchieved && "opacity-75")}>
-        {/* Progress bar — always visible */}
+        {/* Progress bar */}
         <div className="h-1.5 bg-muted">
           <div
             className="h-full bg-gradient-to-r from-rose-400 to-pink-500 transition-all duration-500"
@@ -340,7 +378,6 @@ function GoalCard({
                   {isAchieved && <span className="text-purple-500 font-medium">✓ achieved</span>}
                 </div>
               </div>
-              {/* Expand chevron */}
               <div className="mt-1 shrink-0 text-muted-foreground">
                 {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
               </div>
@@ -370,7 +407,7 @@ function GoalCard({
                 <div className="mt-4 space-y-3">
                   {goal.why && (
                     <p className="text-xs text-muted-foreground italic border-l-2 border-primary/30 pl-3">
-                      "{goal.why}"
+                      &quot;{goal.why}&quot;
                     </p>
                   )}
 
@@ -381,6 +418,7 @@ function GoalCard({
                     </div>
                   )}
 
+                  {/* Steps list */}
                   {steps.length > 0 && !loadingAI && (
                     <div className="space-y-2">
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Steps</p>
@@ -406,14 +444,48 @@ function GoalCard({
                     </div>
                   )}
 
+                  {/* No steps yet — show both options */}
                   {steps.length === 0 && !loadingAI && !isAchieved && (
-                    <Button variant="soft" size="sm" className="gap-1.5" onClick={onBreakdown}>
-                      <Sparkles className="h-3.5 w-3.5" />
-                      Generate AI steps
-                    </Button>
+                    <div className="space-y-2">
+                      <div className="flex gap-2 flex-wrap">
+                        <Button variant="soft" size="sm" className="gap-1.5" onClick={onBreakdown}>
+                          <Sparkles className="h-3.5 w-3.5" />
+                          Let AI plan it
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5"
+                          onClick={() => setShowStepInput(true)}
+                        >
+                          <PenLine className="h-3.5 w-3.5" />
+                          Add steps myself
+                        </Button>
+                      </div>
+                    </div>
                   )}
 
-                  {/* Mark achieved — always available */}
+                  {/* Manual step input — shown when steps exist or user clicked "Add myself" */}
+                  {!isAchieved && (steps.length > 0 || showStepInput) && !loadingAI && (
+                    <div className="flex gap-2">
+                      <input
+                        autoFocus={showStepInput && steps.length === 0}
+                        placeholder="Add a step..."
+                        value={newStep}
+                        onChange={e => setNewStep(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === "Enter") submitStep();
+                          if (e.key === "Escape") { setShowStepInput(false); setNewStep(""); }
+                        }}
+                        className="flex-1 rounded-xl border border-input bg-muted/30 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                      <Button size="sm" variant="soft" onClick={submitStep} disabled={!newStep.trim()}>
+                        Add
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Mark achieved */}
                   {!isAchieved && (
                     <div className="pt-1 border-t border-border/40 flex items-center justify-between">
                       <span className="text-xs text-muted-foreground">Finished this goal?</span>

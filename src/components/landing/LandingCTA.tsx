@@ -55,9 +55,6 @@ export function LandingCTA() {
               </Button>
             </div>
 
-            <p className="mt-6 text-sm text-white/60">
-              Join 10,000+ women planning on their own terms ✨
-            </p>
           </div>
         </motion.div>
       </div>

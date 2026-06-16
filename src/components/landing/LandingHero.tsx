@@ -126,28 +126,6 @@ export function LandingHero() {
             </Button>
           </motion.div>
 
-          {/* Social proof */}
-          <motion.div
-            variants={itemVariants}
-            className="flex items-center gap-3 text-sm text-muted-foreground"
-          >
-            <div className="flex -space-x-2">
-              {["🌸", "💜", "✨", "🌿", "🦋"].map((emoji, i) => (
-                <div
-                  key={i}
-                  className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-background bg-gradient-to-br from-rose-100 to-purple-100 text-sm dark:from-rose-900/40 dark:to-purple-900/40"
-                >
-                  {emoji}
-                </div>
-              ))}
-            </div>
-            <div className="flex items-center gap-1">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Star key={i} className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-              ))}
-            </div>
-            <span>Loved by 10,000+ planners</span>
-          </motion.div>
 
           {/* App preview */}
           <motion.div

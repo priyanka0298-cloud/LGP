@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Sparkles, Flame, Target, Sun, TrendingUp, Plus, RefreshCw, Pencil, Trash2, X, Check as CheckIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,6 +48,38 @@ export function DashboardContent({
   const router = useRouter();
   const today = new Date();
   const todayStr = format(today, "yyyy-MM-dd");
+
+  useEffect(() => {
+    const uid = profile?.id;
+    if (!uid) return;
+    const channel = supabase
+      .channel(`dashboard-tasks-${uid}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "tasks", filter: `user_id=eq.${uid}` }, (payload) => {
+        const t = payload.new as Task;
+        if (t.scheduled_date === todayStr) {
+          setTasks((prev) => prev.find((x) => x.id === t.id) ? prev : [...prev, t]);
+        }
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "tasks", filter: `user_id=eq.${uid}` }, (payload) => {
+        const t = payload.new as Task;
+        setTasks((prev) => {
+          const exists = prev.find((x) => x.id === t.id);
+          if (exists) {
+            if (t.scheduled_date === todayStr) return prev.map((x) => x.id === t.id ? t : x);
+            return prev.filter((x) => x.id !== t.id);
+          }
+          if (t.scheduled_date === todayStr) return [...prev, t];
+          return prev;
+        });
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "tasks", filter: `user_id=eq.${uid}` }, (payload) => {
+        const old = payload.old as { id?: string };
+        if (old?.id) setTasks((prev) => prev.filter((x) => x.id !== old.id));
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id]);
 
   function getFilteredTasks() {
     if (contextFilter === "all") return tasks;

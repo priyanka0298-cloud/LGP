@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { format, addWeeks, subWeeks } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,51 @@ export function WeeklyPlannerView({
   const [weekEnd, setWeekEnd] = useState(initialWeekEnd);
   const [tasksByDate, setTasksByDate] = useState(initialTasksByDate);
   const supabase = createClient();
+
+  useEffect(() => {
+    const weekStartStr = format(weekStart, "yyyy-MM-dd");
+    const weekEndStr = format(weekEnd, "yyyy-MM-dd");
+    const channel = supabase
+      .channel(`planner-tasks-${userId}-${weekStartStr}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "tasks", filter: `user_id=eq.${userId}` }, (payload) => {
+        const t = payload.new as Task;
+        if (!t.scheduled_date) return;
+        if (t.scheduled_date >= weekStartStr && t.scheduled_date <= weekEndStr) {
+          setTasksByDate((prev) => {
+            const existing = prev[t.scheduled_date!] ?? [];
+            if (existing.find((x) => x.id === t.id)) return prev;
+            return { ...prev, [t.scheduled_date!]: [...existing, t] };
+          });
+        }
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "tasks", filter: `user_id=eq.${userId}` }, (payload) => {
+        const t = payload.new as Task;
+        setTasksByDate((prev) => {
+          const next: Record<string, Task[]> = {};
+          for (const [date, tasks] of Object.entries(prev)) {
+            next[date] = tasks.filter((x) => x.id !== t.id);
+          }
+          if (t.scheduled_date && t.scheduled_date >= weekStartStr && t.scheduled_date <= weekEndStr) {
+            next[t.scheduled_date] = [...(next[t.scheduled_date] ?? []), t];
+          }
+          return next;
+        });
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "tasks", filter: `user_id=eq.${userId}` }, (payload) => {
+        const old = payload.old as { id?: string };
+        if (!old?.id) return;
+        setTasksByDate((prev) => {
+          const next: Record<string, Task[]> = {};
+          for (const [date, tasks] of Object.entries(prev)) {
+            next[date] = tasks.filter((x) => x.id !== old.id);
+          }
+          return next;
+        });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, weekStart, weekEnd]);
 
   const weekDays = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStart);

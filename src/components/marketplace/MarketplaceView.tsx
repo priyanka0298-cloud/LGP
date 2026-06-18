@@ -89,7 +89,7 @@ export function MarketplaceView({ templates, purchasedIds, userId, isPremium }: 
       setApplied((prev) => new Set([...prev, template.id]));
       toast.success(data.welcome, { duration: 5000 });
       setPreview(null);
-      router.refresh();
+      setTimeout(() => router.push("/planner"), 1500);
     } catch {
       toast.error("Couldn't apply the template. Try again 🌸");
     } finally {
@@ -128,7 +128,7 @@ export function MarketplaceView({ templates, purchasedIds, userId, isPremium }: 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-bold">Template Marketplace 🛍️</h1>
+        <h1 className="font-display text-xl md:text-2xl font-bold">Template Marketplace 🛍️</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Skip the blank page. Each template instantly adds a curated set of habits and tasks to your planner — so instead of starting from scratch, you just pick what fits your life and go.
         </p>
@@ -329,18 +329,23 @@ export function MarketplaceView({ templates, purchasedIds, userId, isPremium }: 
                   Buy for {formatCurrency(preview.price_cents)}
                 </Button>
               ) : (
-                <Button
-                  variant="gradient"
-                  className="w-full gap-2"
-                  onClick={() => handleApply(preview)}
-                  disabled={applying === preview.id}
-                >
-                  {applying === preview.id ? (
-                    <><span className="animate-spin">✨</span> Applying...</>
-                  ) : (
-                    <><Wand2 className="h-4 w-4" /> Apply this template</>
-                  )}
-                </Button>
+                <>
+                  <p className="text-xs text-muted-foreground text-center mb-3">
+                    Habits go to your Habits list · Tasks land on today&apos;s planner
+                  </p>
+                  <Button
+                    variant="gradient"
+                    className="w-full gap-2"
+                    onClick={() => handleApply(preview)}
+                    disabled={applying === preview.id}
+                  >
+                    {applying === preview.id ? (
+                      <><span className="animate-spin">✨</span> Applying...</>
+                    ) : (
+                      <><Wand2 className="h-4 w-4" /> Apply this template</>
+                    )}
+                  </Button>
+                </>
               )}
             </div>
           </div>

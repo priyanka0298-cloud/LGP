@@ -54,6 +54,7 @@ export function AIAssistantCard({ profile, tasks, mood }: AIAssistantCardProps) 
             energyLevel: mood?.energy_level,
             taskCount: tasks.length,
             existingTasks: tasks.slice(0, 5).map((t) => t.title),
+            userGoals: profile?.onboarding_goals?.length ? profile.onboarding_goals : undefined,
           },
         }),
       });
@@ -137,10 +138,9 @@ export function AIAssistantCard({ profile, tasks, mood }: AIAssistantCardProps) 
         <AnimatePresence>
           {(response || loading) && (
             <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="overflow-hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
             >
               <div className="rounded-2xl bg-gradient-to-br from-rose-50/80 to-purple-50/80 dark:from-rose-950/20 dark:to-purple-950/20 border border-border/30 p-4">
                 {loading ? (

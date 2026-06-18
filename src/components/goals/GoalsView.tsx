@@ -112,8 +112,14 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
   }
 
   async function updateGoal(id: string, updates: { title?: string; why?: string | null; category?: string; time_horizon?: string; target_date?: string | null; emoji?: string }) {
-    setGoals(prev => prev.map(g => g.id === id ? { ...g, ...updates } : g));
-    await supabase.from("goals").update(updates).eq("id", id);
+    const prev = goals.find(g => g.id === id);
+    setGoals(gs => gs.map(g => g.id === id ? { ...g, ...updates } : g));
+    const { error } = await supabase.from("goals").update(updates).eq("id", id);
+    if (error) {
+      if (prev) setGoals(gs => gs.map(g => g.id === id ? prev : g));
+      toast.error("Couldn't save changes. Try again?");
+      return;
+    }
     toast.success("Goal updated");
   }
 
@@ -190,7 +196,7 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
       {/* Header */}
       <div className="mb-8 flex items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-bold">Goals ✨</h1>
+          <h1 className="font-display text-xl md:text-3xl font-bold">Goals ✨</h1>
           <p className="mt-1 text-muted-foreground text-sm">Big dreams, broken into tiny steps. No pressure.</p>
         </div>
         <Button variant="gradient" size="sm" className="gap-2 shadow-glow shrink-0" onClick={() => setShowForm(true)}>
@@ -400,7 +406,7 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
                 onToggleStep={idx => toggleStep(goal, idx)}
                 onBreakdown={() => {}}
                 onAddStep={() => {}}
-                onUpdate={() => {}}
+                onUpdate={updates => updateGoal(goal.id, updates)}
                 onAchieve={() => {}}
                 onDelete={() => deleteGoal(goal.id)}
                 onPin={() => togglePin(goal)}
@@ -532,63 +538,53 @@ function GoalCard({
           </div>
 
           {/* Inline edit form */}
-          <AnimatePresence>
-            {isEditing && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden"
-              >
-                <div className="mt-3 pt-3 border-t border-border/40 space-y-2">
-                  <input
-                    autoFocus
-                    value={editTitle}
-                    onChange={e => setEditTitle(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setIsEditing(false); }}
-                    className="w-full rounded-xl border border-input bg-muted/30 px-3 py-2 text-sm font-medium focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                  <textarea
-                    placeholder="Why does this matter? (optional)"
-                    value={editWhy}
-                    onChange={e => setEditWhy(e.target.value)}
-                    rows={2}
-                    className="w-full rounded-xl border border-input bg-muted/30 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none"
-                  />
-                  <div className="flex gap-1.5 flex-wrap">
-                    {CATEGORIES.map(c => (
-                      <button key={c.value} onClick={() => setEditCategory(c.value)}
-                        className={cn("rounded-full px-2.5 py-0.5 text-xs font-medium border transition-all",
-                          editCategory === c.value ? "bg-primary text-primary-foreground border-primary" : "bg-muted border-border text-muted-foreground hover:border-primary/50")}>
-                        {c.emoji} {c.label}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex gap-1.5 flex-wrap">
-                    {HORIZONS.map(h => (
-                      <button key={h.value} onClick={() => setEditHorizon(h.value)}
-                        className={cn("rounded-full px-2.5 py-0.5 text-xs font-medium border transition-all",
-                          editHorizon === h.value ? "bg-primary text-primary-foreground border-primary" : "bg-muted border-border text-muted-foreground hover:border-primary/50")}>
-                        {h.label}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CalendarDays className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <input type="date" value={editDeadline} onChange={e => setEditDeadline(e.target.value)}
-                      min={new Date().toISOString().split("T")[0]}
-                      className="rounded-xl border border-input bg-muted/30 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary text-muted-foreground [&:not([value=''])]:text-foreground" />
-                    {editDeadline && <button onClick={() => setEditDeadline("")} className="text-xs text-muted-foreground hover:text-red-400"><X className="h-3.5 w-3.5" /></button>}
-                  </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="gradient" onClick={saveEdit} disabled={!editTitle.trim()} className="h-7 px-3 text-xs">Save</Button>
-                    <Button size="sm" variant="ghost" onClick={() => setIsEditing(false)} className="h-7 px-3 text-xs">Cancel</Button>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {isEditing && (
+            <div className="mt-3 pt-3 border-t border-border/40 space-y-2">
+              <input
+                autoFocus
+                value={editTitle}
+                onChange={e => setEditTitle(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setIsEditing(false); }}
+                className="w-full rounded-xl border border-input bg-muted/30 px-3 py-2 text-sm font-medium focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+              <textarea
+                placeholder="Why does this matter? (optional)"
+                value={editWhy}
+                onChange={e => setEditWhy(e.target.value)}
+                rows={2}
+                className="w-full rounded-xl border border-input bg-muted/30 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+              />
+              <div className="flex gap-1.5 flex-wrap">
+                {CATEGORIES.map(c => (
+                  <button key={c.value} onClick={() => setEditCategory(c.value)}
+                    className={cn("rounded-full px-2.5 py-0.5 text-xs font-medium border transition-all",
+                      editCategory === c.value ? "bg-primary text-primary-foreground border-primary" : "bg-muted border-border text-muted-foreground hover:border-primary/50")}>
+                    {c.emoji} {c.label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-1.5 flex-wrap">
+                {HORIZONS.map(h => (
+                  <button key={h.value} onClick={() => setEditHorizon(h.value)}
+                    className={cn("rounded-full px-2.5 py-0.5 text-xs font-medium border transition-all",
+                      editHorizon === h.value ? "bg-primary text-primary-foreground border-primary" : "bg-muted border-border text-muted-foreground hover:border-primary/50")}>
+                    {h.label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <CalendarDays className="h-4 w-4 text-muted-foreground shrink-0" />
+                <input type="date" value={editDeadline} onChange={e => setEditDeadline(e.target.value)}
+                  min={new Date().toISOString().split("T")[0]}
+                  className="rounded-xl border border-input bg-muted/30 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary text-muted-foreground [&:not([value=''])]:text-foreground" />
+                {editDeadline && <button onClick={() => setEditDeadline("")} className="text-xs text-muted-foreground hover:text-red-400"><X className="h-3.5 w-3.5" /></button>}
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" variant="gradient" onClick={saveEdit} disabled={!editTitle.trim()} className="h-7 px-3 text-xs">Save</Button>
+                <Button size="sm" variant="ghost" onClick={() => setIsEditing(false)} className="h-7 px-3 text-xs">Cancel</Button>
+              </div>
+            </div>
+          )}
 
           {/* Expanded detail */}
           <AnimatePresence>

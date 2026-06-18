@@ -63,8 +63,8 @@ export default function PricingPage() {
       <div className="mx-auto max-w-5xl px-6 py-12">
         {/* Header */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ y: 20 }}
+          animate={{ y: 0 }}
           className="text-center mb-12"
         >
           <Badge variant="soft" className="mb-4 gap-1.5">
@@ -112,8 +112,8 @@ export default function PricingPage() {
           {displayPlans.map((plan, i) => (
             <motion.div
               key={plan.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ y: 20 }}
+              animate={{ y: 0 }}
               transition={{ delay: i * 0.1 }}
               className={cn(
                 "relative rounded-3xl border p-6 flex flex-col",
@@ -179,8 +179,8 @@ export default function PricingPage() {
 
         {/* FAQ / reassurance */}
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          initial={{ y: 10 }}
+          animate={{ y: 0 }}
           transition={{ delay: 0.4 }}
           className="mt-16 text-center space-y-4"
         >

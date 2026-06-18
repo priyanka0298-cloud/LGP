@@ -9,6 +9,9 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { input, context = {} } = await request.json();
+  const userGoalsNote = context.userGoals?.length
+    ? `\n\nThis user is working on: ${context.userGoals.join(", ")}. Keep this in mind when giving advice.`
+    : "";
 
   try {
     const openai = getOpenAIClient();
@@ -18,7 +21,7 @@ export async function POST(request: Request) {
       messages: [
         {
           role: "system",
-          content: `${SYSTEM_PROMPT_BASE}
+          content: `${SYSTEM_PROMPT_BASE}${userGoalsNote}
 
 You are currently acting as a gentle planning chat assistant. Keep responses concise (max 3 paragraphs), warm, and actionable. Format with markdown when helpful. Always end with something encouraging.`,
         },

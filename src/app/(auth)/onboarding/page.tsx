@@ -77,11 +77,12 @@ export default function OnboardingPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { error } = await (supabase.from("profiles") as any).update({
+    const { error } = await supabase.from("profiles").update({
       display_name: data.display_name || undefined,
       pronouns: data.pronouns || undefined,
       planning_style: data.planning_style,
       accent_color: data.accent_color,
+      onboarding_goals: data.goals,
       onboarding_completed: true,
       onboarding_step: STEPS,
     }).eq("id", user.id);

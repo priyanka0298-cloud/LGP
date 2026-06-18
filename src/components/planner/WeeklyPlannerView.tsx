@@ -1,15 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
-import { format, addWeeks, subWeeks, isToday } from "date-fns";
-import { ChevronLeft, ChevronRight, Sparkles, Plus, Target } from "lucide-react";
+import { format, addWeeks, subWeeks } from "date-fns";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { DayColumn } from "./DayColumn";
+import { PlannerAIAssistant } from "./PlannerAIAssistant";
 import type { Task, WeeklyPlan, Goal } from "@/types";
-import { TASK_CATEGORY_CONFIG } from "@/types";
-import { cn, formatDate } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 
@@ -70,7 +68,7 @@ export function WeeklyPlannerView({
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="font-display text-2xl font-bold">Weekly Planner</h1>
+          <h1 className="font-display text-xl md:text-2xl font-bold">Planner</h1>
           <p className="text-sm text-muted-foreground">
             {format(weekStart, "MMM d")} – {format(weekEnd, "MMM d, yyyy")}
           </p>
@@ -122,24 +120,11 @@ export function WeeklyPlannerView({
         })}
       </div>
 
-      {/* AI suggestion */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-sm">
-            <Sparkles className="h-4 w-4 text-primary" />
-            AI Weekly Planning Assistant
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground mb-3">
-            Let AI help you plan a realistic, gentle week based on your goals and energy.
-          </p>
-          <Button variant="soft" size="sm" className="gap-1.5">
-            <Sparkles className="h-3.5 w-3.5" />
-            Generate gentle week plan
-          </Button>
-        </CardContent>
-      </Card>
+      {/* AI Planning Assistant */}
+      <PlannerAIAssistant
+        tasks={Object.values(tasksByDate).flat()}
+        goals={goals}
+      />
     </div>
   );
 }

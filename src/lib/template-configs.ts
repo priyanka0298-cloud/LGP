@@ -132,8 +132,8 @@ export const TEMPLATE_CONFIGS: Record<string, TemplateConfig> = {
       { name: "Connect with someone I love", emoji: "🫂", frequency: "weekly", category: "relationships" },
     ],
     tasks: [
-      { title: "Pick ONE habit to focus on first — add the rest slowly", category: "must_do", emoji: "🎯" },
-      { title: "Set a daily reminder for your chosen habit", category: "must_do", emoji: "🔔" },
+      { title: "Do my morning movement (10 min)", category: "must_do", emoji: "🧘" },
+      { title: "No phone for first 30 min after waking", category: "must_do", emoji: "📵" },
     ],
     welcome_message: "Your Habit Bundle is loaded with 6 habits. Start with just ONE — let it stick before adding more. 🌿",
   },
@@ -175,7 +175,7 @@ export const TEMPLATE_CONFIGS: Record<string, TemplateConfig> = {
     ],
     tasks: [
       { title: "Do a full brain dump right now — everything on your mind", category: "must_do", emoji: "🧠" },
-      { title: "Sort the dump into: do, delegate, delete, defer", category: "must_do", emoji: "📋" },
+      { title: "Sort my brain dump into: do, delegate, delete, defer", category: "must_do", emoji: "📋" },
       { title: "Pick the ONE thing from the dump to do today", category: "must_do", emoji: "⭐" },
       { title: "Let go of at least 3 items from the list", category: "should_do", emoji: "🍃" },
     ],
@@ -232,7 +232,7 @@ export const TEMPLATE_CONFIGS: Record<string, TemplateConfig> = {
       { name: "Re-read last week's entries on Sunday", emoji: "🔍", frequency: "weekly", category: "mindset" },
     ],
     tasks: [
-      { title: "Set up your journaling space (pen, notebook, or app)", category: "must_do", emoji: "✏️" },
+      { title: "Set up my journaling space (pen, notebook, or app)", category: "must_do", emoji: "✏️" },
       { title: "Write about what you want your life to feel like in 1 year", category: "must_do", emoji: "🌈" },
       { title: "Identify one belief about yourself you want to examine", category: "should_do", emoji: "🔎" },
     ],
@@ -249,8 +249,8 @@ export const TEMPLATE_CONFIGS: Record<string, TemplateConfig> = {
     ],
     tasks: [
       { title: "Pick one existing habit to stack a new one onto", category: "must_do", emoji: "🔗" },
-      { title: "Write your habit stack: AFTER [existing habit] I will [new habit]", category: "must_do", emoji: "📝" },
-      { title: "Track your stack for 7 days and notice what sticks", category: "should_do", emoji: "📊" },
+      { title: "Write out my habit stack formula in my journal", category: "must_do", emoji: "📝" },
+      { title: "Track my habit stack for 7 days", category: "should_do", emoji: "📊" },
     ],
     welcome_message: "Your Habit Stacking Starter Kit is live! 5 habits and 3 tasks to build consistency the easy way. 🌿",
   },

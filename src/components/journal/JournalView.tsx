@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { format, parseISO } from "date-fns";
 import {
-  ChevronRight, ChevronDown, Save, Trash2, Loader2,
+  ChevronRight, ChevronDown, Save, Trash2, Loader2, Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -50,13 +50,6 @@ interface JournalViewProps {
   recentEntries: Partial<JournalEntry>[];
 }
 
-// Day of week: 0 = Sun, 1 = Mon. Check-in unlocks Sun + Mon (grace day).
-function getCheckInStatus() {
-  const day = new Date().getDay();
-  const isUnlocked = day === 0 || day === 1;
-  const daysUntilSunday = day === 0 ? 7 : 7 - day; // if today IS Sunday show 7 (next week)
-  return { isUnlocked, daysUntilSunday };
-}
 
 export function JournalView({ userId, todayEntry, weeklyEntry, recentEntries }: JournalViewProps) {
   const [activeTab, setActiveTab] = useState<Tab>("daily");
@@ -67,8 +60,10 @@ export function JournalView({ userId, todayEntry, weeklyEntry, recentEntries }: 
     (weeklyEntry?.content as Record<string, unknown>) ?? {}
   );
   const [saving, setSaving] = useState(false);
+  const [dailyDirty, setDailyDirty] = useState(false);
+  const [weeklyDirty, setWeeklyDirty] = useState(false);
   const [freeWrite, setFreeWrite] = useState("");
-  const { isUnlocked, daysUntilSunday } = getCheckInStatus();
+  const [freeWriteDirty, setFreeWriteDirty] = useState(false);
 
   // History state
   const [entries, setEntries] = useState(recentEntries);
@@ -80,6 +75,11 @@ export function JournalView({ userId, todayEntry, weeklyEntry, recentEntries }: 
 
   const supabase = createClient();
   const router = useRouter();
+
+  // Sunday Reset is only open Sunday (0) and Monday (1)
+  const day = new Date().getDay();
+  const isUnlocked = day === 0 || day === 1;
+  const daysUntilSunday = day === 0 ? 0 : 7 - day;
 
   // Sync entries when server re-fetches (after router.refresh())
   useEffect(() => { setEntries(recentEntries); }, [recentEntries]);
@@ -198,6 +198,7 @@ export function JournalView({ userId, todayEntry, weeklyEntry, recentEntries }: 
     if (error) {
       toast.error("Couldn't save. Try again?");
     } else {
+      setDailyDirty(false);
       toast.success("Journal saved 💜 Great job checking in with yourself.");
       router.refresh();
     }
@@ -230,16 +231,17 @@ export function JournalView({ userId, todayEntry, weeklyEntry, recentEntries }: 
     if (error) {
       toast.error("Couldn't save. Try again?");
     } else {
+      setWeeklyDirty(false);
       toast.success("Sunday Reset saved 🌸");
       router.refresh();
     }
   }
 
   const tabs = [
-    { id: "daily" as Tab, label: "Daily Page", emoji: "📔", locked: false },
-    { id: "weekly" as Tab, label: "Sunday Reset", emoji: "🌸", locked: !isUnlocked },
-    { id: "free" as Tab, label: "Free Write", emoji: "✍️", locked: false },
-    { id: "history" as Tab, label: "History", emoji: "📚", locked: false },
+    { id: "daily" as Tab, label: "Daily Page", emoji: "📔" },
+    { id: "weekly" as Tab, label: "Sunday Reset", emoji: "🌸" },
+    { id: "free" as Tab, label: "Free Write", emoji: "✍️" },
+    { id: "history" as Tab, label: "History", emoji: "📚" },
   ];
 
   return (
@@ -247,16 +249,16 @@ export function JournalView({ userId, todayEntry, weeklyEntry, recentEntries }: 
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold">Journal</h1>
+          <h1 className="font-display text-xl md:text-2xl font-bold">Journal</h1>
           <p className="text-sm text-muted-foreground">{format(new Date(), "EEEE, MMMM d, yyyy")}</p>
         </div>
-        {activeTab === "daily" && (
+        {activeTab === "daily" && dailyDirty && (
           <Button variant="gradient" size="sm" className="gap-1.5" onClick={saveDailyEntry} disabled={saving}>
             <Save className="h-3.5 w-3.5" />
             {saving ? "Saving..." : "Save"}
           </Button>
         )}
-        {activeTab === "weekly" && isUnlocked && (
+        {activeTab === "weekly" && weeklyDirty && (
           <Button variant="gradient" size="sm" className="gap-1.5" onClick={saveWeeklyEntry} disabled={saving}>
             <Save className="h-3.5 w-3.5" />
             {saving ? "Saving..." : "Save"}
@@ -266,22 +268,33 @@ export function JournalView({ userId, todayEntry, weeklyEntry, recentEntries }: 
 
       {/* Tabs */}
       <div className="flex gap-1 p-1 bg-muted/50 rounded-2xl overflow-x-auto">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              "flex shrink-0 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium transition-all",
-              activeTab === tab.id
-                ? "bg-background shadow-soft text-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <span className="hidden sm:inline">{tab.emoji}</span>
-            {tab.label}
-            {tab.locked && <span className="text-xs opacity-60">🔒</span>}
-          </button>
-        ))}
+        {tabs.map((tab) => {
+          const locked = tab.id === "weekly" && !isUnlocked;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => {
+                if (activeTab === "free" && freeWriteDirty && tab.id !== "free") {
+                  if (!window.confirm("You have an unsaved free write. Leave without saving?")) return;
+                  setFreeWriteDirty(false);
+                }
+                setActiveTab(tab.id);
+              }}
+              title={locked ? "Opens Sunday & Monday" : undefined}
+              className={cn(
+                "flex shrink-0 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium transition-all",
+                activeTab === tab.id
+                  ? "bg-background shadow-soft text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
+                locked && "opacity-50"
+              )}
+            >
+              <span className="hidden sm:inline">{tab.emoji}</span>
+              {tab.label}
+              {locked && <Lock className="h-3 w-3 shrink-0" />}
+            </button>
+          );
+        })}
       </div>
 
       {/* Daily page — accordion */}
@@ -318,7 +331,7 @@ export function JournalView({ userId, todayEntry, weeklyEntry, recentEntries }: 
                       autoFocus
                       placeholder={prompt.placeholder}
                       value={val}
-                      onChange={(e) => setContent({ ...content, [prompt.key]: e.target.value })}
+                      onChange={(e) => { setContent({ ...content, [prompt.key]: e.target.value }); setDailyDirty(true); }}
                       className={cn(
                         "text-sm resize-none border-0 bg-muted/30 focus-visible:ring-1 w-full",
                         prompt.key === "brain_dump" ? "min-h-[140px]" : "min-h-[100px]"
@@ -335,59 +348,62 @@ export function JournalView({ userId, todayEntry, weeklyEntry, recentEntries }: 
 
       {/* Sunday Reset */}
       {activeTab === "weekly" && (
-        !isUnlocked ? (
-          <div className="rounded-2xl border border-border/50 bg-card p-10 text-center space-y-4">
-            <p className="text-4xl">🌸</p>
-            <div>
-              <p className="font-display text-lg font-semibold">The week isn&apos;t done yet</p>
-              <p className="text-sm text-muted-foreground mt-2 leading-relaxed max-w-xs mx-auto">
-                Your Sunday Reset opens on Sunday evening. Spend the week living — come back then (or Monday, no rush) to sit with it.
+        <div className="space-y-2">
+          {!isUnlocked && (
+            <div className="rounded-2xl border border-border/50 bg-card p-8 text-center">
+              <Lock className="h-8 w-8 mx-auto mb-3 text-muted-foreground/40" />
+              <p className="font-semibold text-sm">Come back Sunday 🌸</p>
+              <p className="text-xs text-muted-foreground mt-2">
+                {daysUntilSunday === 1
+                  ? "Your reset window opens tomorrow 🌸"
+                  : `${daysUntilSunday} days until your weekly reset`}
               </p>
             </div>
-            <p className="text-sm text-muted-foreground">
-              {daysUntilSunday === 1 ? "Tomorrow 🌙" : `${daysUntilSunday} days away`}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            <p className="text-xs text-muted-foreground px-1">
-              Open the ones you feel like sitting with. No pressure to do all of them 🌿
-            </p>
-            {REFLECTION_PROMPTS.map((prompt) => {
-              const isOpen = openWeeklyPrompts.has(prompt.key);
-              const val = (weeklyContent[prompt.key] as string) ?? "";
-              return (
-                <div key={prompt.key} className="rounded-2xl border border-border/50 bg-card overflow-hidden">
-                  <button
-                    onClick={() => toggleWeeklyPrompt(prompt.key)}
-                    className="flex w-full items-center justify-between px-4 py-3.5 hover:bg-muted/30 transition-colors text-left"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold">{prompt.q}</p>
-                      {!isOpen && val && (
-                        <p className="text-xs text-muted-foreground truncate mt-0.5">{val}</p>
-                      )}
-                    </div>
-                    {isOpen
-                      ? <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 ml-3" />
-                      : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 ml-3" />}
-                  </button>
-                  {isOpen && (
-                    <div className="px-4 pb-4">
-                      <Textarea
-                        autoFocus
-                        placeholder="Take your time..."
-                        value={val}
-                        onChange={(e) => setWeeklyContent({ ...weeklyContent, [prompt.key]: e.target.value })}
-                        className="min-h-[100px] text-sm resize-none border-0 bg-muted/30 focus-visible:ring-1 w-full"
-                      />
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )
+          )}
+          {isUnlocked && (
+          <>
+          <p className="text-xs text-muted-foreground px-1">
+            Open the ones you feel like sitting with. No pressure 🌿
+          </p>
+          {REFLECTION_PROMPTS.map((prompt) => {
+            const isOpen = openWeeklyPrompts.has(prompt.key);
+            const val = (weeklyContent[prompt.key] as string) ?? "";
+            return (
+              <div key={prompt.key} className="rounded-2xl border border-border/50 bg-card overflow-hidden">
+                <button
+                  onClick={() => toggleWeeklyPrompt(prompt.key)}
+                  className="flex w-full items-center justify-between px-4 py-3.5 hover:bg-muted/30 transition-colors text-left"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold">{prompt.q}</p>
+                    {!isOpen && val && (
+                      <p className="text-xs text-muted-foreground truncate mt-0.5">{val}</p>
+                    )}
+                  </div>
+                  {isOpen
+                    ? <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 ml-3" />
+                    : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 ml-3" />}
+                </button>
+                {isOpen && (
+                  <div className="px-4 pb-4">
+                    <Textarea
+                      autoFocus
+                      placeholder="Take your time..."
+                      value={val}
+                      onChange={(e) => {
+                        setWeeklyContent({ ...weeklyContent, [prompt.key]: e.target.value });
+                        setWeeklyDirty(true);
+                      }}
+                      className="min-h-[100px] text-sm resize-none border-0 bg-muted/30 focus-visible:ring-1 w-full"
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          </>
+          )}
+        </div>
       )}
 
       {/* Free write */}
@@ -400,7 +416,7 @@ export function JournalView({ userId, todayEntry, weeklyEntry, recentEntries }: 
           <Textarea
             placeholder="Just write. Stream of consciousness. Thoughts, feelings, dreams, frustrations... it's all welcome here."
             value={freeWrite}
-            onChange={(e) => setFreeWrite(e.target.value)}
+            onChange={(e) => { setFreeWrite(e.target.value); setFreeWriteDirty(true); }}
             className="min-h-[400px] text-sm resize-none border-0 bg-muted/20 focus-visible:ring-1"
           />
           <div className="flex items-center justify-between">
@@ -421,6 +437,7 @@ export function JournalView({ userId, todayEntry, weeklyEntry, recentEntries }: 
               } else {
                 toast.success("Free write saved 💜");
                 setFreeWrite("");
+                setFreeWriteDirty(false);
                 router.refresh();
               }
             }} disabled={saving || !freeWrite.trim()}>

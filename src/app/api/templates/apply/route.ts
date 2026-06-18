@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { TEMPLATE_CONFIGS } from "@/lib/template-configs";
 import type { TemplateConfig } from "@/types";
+import { format, addDays } from "date-fns";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -75,6 +76,7 @@ export async function POST(request: Request) {
         color: h.color ?? "#f43f5e",
         description: h.description ?? null,
         sort_order: (existingHabits?.length ?? 0) + i,
+        is_active: true,
       }));
 
     if (newHabits.length) {
@@ -94,12 +96,14 @@ export async function POST(request: Request) {
 
     const baseOrder = (existingTasks?.[0]?.sort_order ?? 0) + 1;
 
+    const today = new Date();
     const newTasks = config.tasks.map((t, i) => ({
       user_id: user.id,
       title: t.title,
       category: t.category ?? ("should_do" as const),
       emoji: t.emoji ?? null,
       sort_order: baseOrder + i,
+      scheduled_date: format(addDays(today, i % 7), "yyyy-MM-dd"),
     }));
 
     const { error } = await supabase.from("tasks").insert(newTasks);

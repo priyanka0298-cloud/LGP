@@ -26,7 +26,7 @@ export async function POST(request: Request) {
 Additional context:
 - Current mood: ${context.moodScore ?? "unknown"}/7
 - Energy level: ${context.energyLevel ?? "unknown"}/5
-- Existing tasks today: ${context.existingTasks?.length ?? 0} (${context.existingTasks?.join(", ") ?? "none"})
+- Existing tasks today: ${context.existingTasks?.length ?? 0} (${context.existingTasks?.join(", ") ?? "none"})${context.userGoals?.length ? `\n- What this user is working on: ${context.userGoals.join(", ")}` : ""}
 
 Please help me organize this into a gentle, realistic plan.`;
 

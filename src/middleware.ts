@@ -5,6 +5,13 @@ const PUBLIC_ROUTES = ["/", "/pricing", "/login", "/signup", "/auth/callback", "
 const AUTH_ROUTES = ["/login", "/signup"];
 
 export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+
+  // Cron and webhook endpoints handle their own auth — skip session check
+  if (pathname.startsWith("/api/cron/") || pathname.startsWith("/api/stripe/webhook")) {
+    return NextResponse.next();
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -32,7 +39,6 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const pathname = request.nextUrl.pathname;
   const isPublicRoute = PUBLIC_ROUTES.some(
     (r) => pathname === r || pathname.startsWith(r + "/")
   );
@@ -55,6 +61,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|json|txt|xml)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/cron|api/stripe/webhook|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|json|txt|xml)$).*)",
   ],
 };

@@ -1,31 +1,25 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
-import { Plus, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
-interface FoodEntry {
+interface FoodItem {
   id: string;
-  time: string;
-  meal: string;
-  what: string;
+  text: string;
 }
 
-const MEAL_TYPES = ["Breakfast", "Lunch", "Dinner", "Snack", "Other"];
-
 export function FoodLogCard({ userId }: { userId: string }) {
-  const [foodLog, setFoodLog] = useState<FoodEntry[]>([]);
+  const [items, setItems] = useState<FoodItem[]>([]);
   const [water, setWater] = useState(0);
   const [entryId, setEntryId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [foodTime, setFoodTime] = useState(format(new Date(), "HH:mm"));
-  const [foodMeal, setFoodMeal] = useState("Breakfast");
-  const [foodWhat, setFoodWhat] = useState("");
+  const [input, setInput] = useState("");
   const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
   const today = format(new Date(), "yyyy-MM-dd");
 
@@ -43,7 +37,12 @@ export function FoodLogCard({ userId }: { userId: string }) {
         setEntryId(data.id as string);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const c = data.content as any;
-        setFoodLog(c?.entries ?? []);
+        // Support both new format (items) and old format (entries with time/meal/what)
+        if (c?.items) {
+          setItems(c.items);
+        } else if (c?.entries) {
+          setItems(c.entries.map((e: { id: string; what: string }) => ({ id: e.id, text: e.what })));
+        }
         setWater(c?.water ?? 0);
       }
       setLoading(false);
@@ -52,11 +51,10 @@ export function FoodLogCard({ userId }: { userId: string }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
-  async function persist(entries: FoodEntry[], waterCount: number) {
+  async function persist(nextItems: FoodItem[], waterCount: number) {
     setSaving(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const payload = { entries, water: waterCount } as any;
-
+    const payload = { items: nextItems, water: waterCount } as any;
     if (entryId) {
       await supabase.from("journal_entries").update({ content: payload }).eq("id", entryId);
     } else {
@@ -70,25 +68,25 @@ export function FoodLogCard({ userId }: { userId: string }) {
     setSaving(false);
   }
 
+  async function addItem() {
+    if (!input.trim()) return;
+    const next = [...items, { id: Date.now().toString(), text: input.trim() }];
+    setItems(next);
+    setInput("");
+    inputRef.current?.focus();
+    await persist(next, water);
+  }
+
+  async function removeItem(id: string) {
+    const next = items.filter((i) => i.id !== id);
+    setItems(next);
+    await persist(next, water);
+  }
+
   async function setWaterCount(n: number) {
-    const next = water === n ? 0 : n; // clicking the same glass toggles it off
+    const next = water === n ? 0 : n;
     setWater(next);
-    await persist(foodLog, next);
-  }
-
-  async function addEntry() {
-    if (!foodWhat.trim()) return;
-    const entry: FoodEntry = { id: Date.now().toString(), time: foodTime, meal: foodMeal, what: foodWhat.trim() };
-    const updated = [...foodLog, entry];
-    setFoodLog(updated);
-    setFoodWhat("");
-    await persist(updated, water);
-  }
-
-  async function removeEntry(id: string) {
-    const updated = foodLog.filter((e) => e.id !== id);
-    setFoodLog(updated);
-    await persist(updated, water);
+    await persist(items, next);
   }
 
   if (loading) return null;
@@ -130,60 +128,42 @@ export function FoodLogCard({ userId }: { userId: string }) {
         <div>
           <p className="text-xs font-semibold text-muted-foreground mb-2">🥗 Food</p>
 
-          {foodLog.length > 0 && (
-            <div className="space-y-1.5 mb-3">
-              {foodLog
-                .slice()
-                .sort((a, b) => a.time.localeCompare(b.time))
-                .map((entry) => (
-                  <div key={entry.id} className="flex items-center gap-2 rounded-xl bg-muted/30 px-3 py-2">
-                    <span className="text-xs text-muted-foreground w-10 shrink-0">{entry.time}</span>
-                    <span className="text-xs font-medium text-primary shrink-0">{entry.meal}</span>
-                    <span className="text-xs flex-1 truncate">{entry.what}</span>
-                    <button
-                      onClick={() => removeEntry(entry.id)}
-                      className="text-muted-foreground hover:text-red-500 transition-colors shrink-0"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
+          {/* Items list */}
+          {items.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-3">
+              {items.map((item) => (
+                <div
+                  key={item.id}
+                  className="group flex items-center gap-1 rounded-full bg-muted/60 px-3 py-1"
+                >
+                  <span className="text-xs">{item.text}</span>
+                  <button
+                    onClick={() => removeItem(item.id)}
+                    className="text-muted-foreground/50 hover:text-red-500 transition-colors ml-0.5"
+                    aria-label="Remove"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
             </div>
           )}
 
-          {foodLog.length === 0 && (
+          {items.length === 0 && (
             <p className="text-xs text-muted-foreground mb-3">Nothing logged yet today</p>
           )}
 
-          {/* Quick-add form */}
-          <div className="space-y-2">
-            <div className="flex gap-1.5">
-              <input
-                type="time"
-                value={foodTime}
-                onChange={(e) => setFoodTime(e.target.value)}
-                className="rounded-lg border border-input bg-muted/30 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-              <select
-                value={foodMeal}
-                onChange={(e) => setFoodMeal(e.target.value)}
-                className="flex-1 rounded-lg border border-input bg-muted/30 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
-              >
-                {MEAL_TYPES.map((m) => <option key={m} value={m}>{m}</option>)}
-              </select>
-            </div>
-            <div className="flex gap-1.5">
-              <input
-                placeholder="What did you have?"
-                value={foodWhat}
-                onChange={(e) => setFoodWhat(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && addEntry()}
-                className="flex-1 rounded-lg border border-input bg-muted/30 px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-              <Button variant="soft" size="sm" className="h-8 px-2.5" onClick={addEntry} disabled={saving || !foodWhat.trim()}>
-                <Plus className="h-3.5 w-3.5" />
-              </Button>
-            </div>
+          {/* Quick-add */}
+          <div className="flex gap-1.5">
+            <input
+              ref={inputRef}
+              placeholder="What did you eat? (press Enter)"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addItem()}
+              disabled={saving}
+              className="flex-1 rounded-xl border border-input bg-muted/30 px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+            />
           </div>
         </div>
       </CardContent>

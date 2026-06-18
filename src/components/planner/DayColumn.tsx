@@ -158,7 +158,7 @@ export function DayColumn({ date, tasks, userId, onTaskUpdate, onTaskAdded, onTa
                   </button>
                   <span className="leading-tight line-clamp-2 flex-1 cursor-pointer" onClick={() => toggleTask(task)}>{task.emoji} {task.title}</span>
                   {task.status !== "done" && (
-                    <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    <div className="flex gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
                       <button onClick={() => { setEditingId(task.id); setEditTitle(task.title); setEditCat(task.category as TaskCategory); }}
                         className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-primary">
                         <Pencil className="h-2.5 w-2.5" />

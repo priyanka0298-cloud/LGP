@@ -153,6 +153,34 @@ export function SettingsView({
     else toast.success(`Daily check-in set for ${formatTime(reminderTime)} 🌸`);
   }
 
+  const [exportLoading, setExportLoading] = useState(false);
+
+  async function downloadMyData() {
+    if (!profile) return;
+    setExportLoading(true);
+    try {
+      const [{ data: journal }, { data: goals }, { data: tasks }] = await Promise.all([
+        supabase.from("journal_entries").select("*").eq("user_id", profile.id).order("entry_date", { ascending: false }),
+        supabase.from("goals").select("*").eq("user_id", profile.id),
+        supabase.from("tasks").select("*").eq("user_id", profile.id),
+      ]);
+      const blob = new Blob(
+        [JSON.stringify({ exported_at: new Date().toISOString(), profile, journal: journal ?? [], goals: goals ?? [], tasks: tasks ?? [] }, null, 2)],
+        { type: "application/json" }
+      );
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `softlivi-data-${new Date().toISOString().split("T")[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Your data has been downloaded 🌿");
+    } catch {
+      toast.error("Couldn't export data. Try again?");
+    }
+    setExportLoading(false);
+  }
+
   async function openBillingPortal() {
     setPortalLoading(true);
     const res = await fetch("/api/stripe/portal", { method: "POST" });
@@ -172,7 +200,7 @@ export function SettingsView({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-bold">Settings ⚙️</h1>
+        <h1 className="font-display text-xl md:text-2xl font-bold">Settings ⚙️</h1>
         <p className="text-sm text-muted-foreground">Customize your planning experience</p>
       </div>
 
@@ -310,8 +338,8 @@ export function SettingsView({
                         </p>
                       )}
                     </div>
-                    <Badge variant={subscription?.plan === "premium" ? "default" : "outline"} className="capitalize">
-                      {subscription?.plan ?? "free"}
+                    <Badge variant={subscription?.plan !== "free" ? "default" : "outline"} className="capitalize">
+                      {(subscription?.plan ?? "free").replace("_", " ")}
                     </Badge>
                   </div>
 
@@ -461,9 +489,9 @@ export function SettingsView({
                   <p className="text-sm text-muted-foreground">
                     Your journal entries and personal data are private by default. We never sell your data.
                   </p>
-                  <Button variant="outline" className="gap-2 text-destructive hover:text-destructive">
+                  <Button variant="outline" className="gap-2" onClick={downloadMyData} disabled={exportLoading}>
                     <Shield className="h-4 w-4" />
-                    Download my data
+                    {exportLoading ? "Exporting..." : "Download my data"}
                   </Button>
                 </CardContent>
               </Card>

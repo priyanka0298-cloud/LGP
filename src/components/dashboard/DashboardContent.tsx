@@ -144,7 +144,7 @@ export function DashboardContent({
       {/* Header row */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold">
+          <h1 className="font-display text-xl md:text-2xl font-bold">
             {format(today, "EEEE, MMMM d")} 🌸
           </h1>
           {weeklyPlan?.intention && (
@@ -261,9 +261,15 @@ export function DashboardContent({
                 <div className="empty-state py-8">
                   <p className="text-3xl mb-2">🌿</p>
                   <p className="text-sm font-medium">Nothing planned yet</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Add a task or let AI plan your day
+                  <p className="text-xs text-muted-foreground mt-1 mb-3">
+                    Add a task below, or use the AI assistant to plan your day
                   </p>
+                  <button
+                    onClick={() => document.getElementById("ai-assistant")?.scrollIntoView({ behavior: "smooth" })}
+                    className="text-xs text-primary hover:underline flex items-center gap-1 mx-auto"
+                  >
+                    <Sparkles className="h-3 w-3" /> Open AI assistant ↓
+                  </button>
                 </div>
               ) : filteredTasks.length === 0 ? (
                 <div className="empty-state py-6">
@@ -305,7 +311,9 @@ export function DashboardContent({
           </Card>
 
           {/* AI Assistant */}
-          <AIAssistantCard profile={profile} tasks={tasks} mood={mood} />
+          <div id="ai-assistant">
+            <AIAssistantCard profile={profile} tasks={tasks} mood={mood} />
+          </div>
         </div>
 
         {/* Right column */}
@@ -363,7 +371,7 @@ export function DashboardContent({
 function TaskItem({ task, onComplete, onUpdate, onDelete }: {
   task: Task;
   onComplete: () => void;
-  onUpdate: (updates: { title?: string; category?: string }) => void;
+  onUpdate: (updates: { title?: string; category?: TaskCategory }) => void;
   onDelete: () => void;
 }) {
   const isDone = task.status === "done";
@@ -431,7 +439,7 @@ function TaskItem({ task, onComplete, onUpdate, onDelete }: {
       </div>
       {context && <span className="text-sm shrink-0">{context}</span>}
       {!isDone && (
-        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
           <button onClick={() => setEditing(true)} className="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-primary transition-colors">
             <Pencil className="h-3.5 w-3.5" />
           </button>

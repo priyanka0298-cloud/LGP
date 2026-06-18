@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { format, parseISO, subDays, startOfWeek, addDays, isToday, isFuture } from "date-fns";
 import { Heart, Flame, Target, AlertTriangle, Sparkles, CheckCircle2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { cn, getEnergyLabel } from "@/lib/utils";
 import { TASK_CATEGORY_CONFIG } from "@/types";
 
 const MOOD_META: Record<number, { emoji: string; label: string; bg: string; ring: string }> = {
@@ -36,7 +36,7 @@ function taskDotColor(count: number) {
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 interface AnalyticsViewProps {
-  moods: Array<{ date: string; mood_score: number | null; energy_level: number | null; mood_label: string | null; note?: string | null }>;
+  moods: Array<{ date: string; mood_score: number | null; energy_level: number | null; mood_label: string | null; note?: string | null; created_at?: string | null }>;
   tasks: Array<{ scheduled_date: string | null; status: string; category: string; title?: string | null; emoji?: string | null; completed_at?: string | null }>;
   habits: Array<{ id: string; name: string; emoji: string | null; streak_current: number; streak_longest: number; total_completions: number }>;
   completions: Array<{ habit_id: string; completed_date: string }>;
@@ -117,7 +117,7 @@ export function AnalyticsView({ moods, tasks, habits, completions }: AnalyticsVi
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-bold">Your Wellness Analytics ✨</h1>
+        <h1 className="font-display text-xl md:text-2xl font-bold">Your Wellness Analytics ✨</h1>
         <p className="text-sm text-muted-foreground">35-day overview — patterns without pressure</p>
       </div>
 
@@ -158,18 +158,82 @@ export function AnalyticsView({ moods, tasks, habits, completions }: AnalyticsVi
 
           {/* Stats */}
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {[
-              { label: "Avg Mood", value: avgMood ? `${avgMood.toFixed(1)}/7` : "—", icon: Heart, color: "text-rose-500", bg: "from-rose-50 to-pink-50 dark:from-rose-950/30" },
-              { label: "Avg Energy", value: avgEnergy ? `${avgEnergy.toFixed(1)}/5` : "—", icon: Sparkles, color: "text-purple-500", bg: "from-purple-50 to-violet-50 dark:from-purple-950/30" },
-              { label: "Task Rate", value: `${overallCompletion}%`, icon: Target, color: "text-emerald-500", bg: "from-emerald-50 to-teal-50 dark:from-emerald-950/30" },
-              { label: "Top Streak", value: topStreak ? `${topStreak} days` : "—", icon: Flame, color: "text-orange-500", bg: "from-orange-50 to-amber-50 dark:from-orange-950/30" },
-            ].map((stat) => (
-              <div key={stat.label} className={cn("rounded-2xl bg-gradient-to-br border border-border/40 p-4", stat.bg)}>
-                <stat.icon className={cn("h-5 w-5 mb-2", stat.color)} />
-                <p className="text-2xl font-bold">{stat.value}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
-              </div>
-            ))}
+            {/* Avg Mood */}
+            <div className="rounded-2xl bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-950/30 border border-border/40 p-4">
+              {avgMood ? (
+                <>
+                  <span className="text-2xl block mb-1 leading-none">
+                    {MOOD_META[Math.round(avgMood)]?.emoji}
+                  </span>
+                  <p className="font-bold text-base leading-snug">
+                    {MOOD_META[Math.round(avgMood)]?.label}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Avg mood · {moodsWithScore.length} logs</p>
+                </>
+              ) : (
+                <>
+                  <Heart className="h-5 w-5 text-rose-500 mb-2" />
+                  <p className="text-sm font-medium text-muted-foreground">No data yet</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Avg mood</p>
+                  <p className="text-[10px] text-muted-foreground/60 mt-1">Log from dashboard</p>
+                </>
+              )}
+            </div>
+
+            {/* Avg Energy */}
+            <div className="rounded-2xl bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950/30 border border-border/40 p-4">
+              {avgEnergy ? (
+                <>
+                  <div className="flex gap-1 mb-2">
+                    {Array.from({ length: 5 }, (_, i) => (
+                      <div
+                        key={i}
+                        className={cn(
+                          "h-2 flex-1 rounded-full transition-all",
+                          i < Math.round(avgEnergy)
+                            ? "bg-purple-400 dark:bg-purple-500"
+                            : "bg-muted"
+                        )}
+                      />
+                    ))}
+                  </div>
+                  <p className="font-bold text-base leading-snug">
+                    {getEnergyLabel(Math.round(avgEnergy))}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Avg energy · {moodsWithEnergy.length} logs</p>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-5 w-5 text-purple-500 mb-2" />
+                  <p className="text-sm font-medium text-muted-foreground">No data yet</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Avg energy</p>
+                  <p className="text-[10px] text-muted-foreground/60 mt-1">Log from dashboard</p>
+                </>
+              )}
+            </div>
+
+            {/* Task Rate */}
+            <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 border border-border/40 p-4">
+              <Target className="h-5 w-5 text-emerald-500 mb-2" />
+              <p className="text-2xl font-bold">{overallCompletion}%</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Task completion</p>
+            </div>
+
+            {/* Top Streak */}
+            <div className="rounded-2xl bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/30 border border-border/40 p-4">
+              <Flame className="h-5 w-5 text-orange-500 mb-2" />
+              {topStreak ? (
+                <>
+                  <p className="text-2xl font-bold">{topStreak}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Day streak</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-medium text-muted-foreground">No streak yet</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Day streak</p>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Mood + Energy calendar */}
@@ -448,6 +512,11 @@ export function AnalyticsView({ moods, tasks, habits, completions }: AnalyticsVi
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-sm font-semibold">{meta?.label ?? entry.mood_label}</p>
                         <p className="text-xs text-muted-foreground">{format(parseISO(entry.date), "EEE, MMMM d")}</p>
+                        {entry.created_at && (
+                          <p className="text-xs text-muted-foreground/60">
+                            · {format(new Date(entry.created_at), "h:mm a")}
+                          </p>
+                        )}
                       </div>
                       {entry.energy_level && (
                         <div className="flex items-center gap-1.5 mt-1">

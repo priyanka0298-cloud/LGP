@@ -44,7 +44,7 @@ export function CycleView({ logs: initialLogs, avgCycleLength, userId, subscript
   const [selectedDate, setSelectedDate] = useState(today);
   const supabase = createClient();
 
-  const isPremium = subscription?.plan === "premium";
+  const isPremium = subscription?.plan !== "free";
 
   const phaseInfo = getPhaseInfo(logs, avgCycleLength);
   const phase = phaseInfo?.phase;
@@ -111,7 +111,7 @@ export function CycleView({ logs: initialLogs, avgCycleLength, userId, subscript
     <div className="space-y-6 max-w-3xl">
       {/* Header */}
       <div>
-        <h1 className="font-display text-2xl font-bold">Cycle Tracker 🌹</h1>
+        <h1 className="font-display text-xl md:text-2xl font-bold">Cycle Tracker 🌹</h1>
         <p className="text-sm text-muted-foreground">Track your cycle, understand your body, plan with kindness.</p>
       </div>
 
@@ -385,37 +385,28 @@ export function CycleView({ logs: initialLogs, avgCycleLength, userId, subscript
             {showHistory ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
           </button>
 
-          <AnimatePresence>
-            {showHistory && (
-              <motion.div
-                initial={{ height: 0 }}
-                animate={{ height: "auto" }}
-                exit={{ height: 0 }}
-                className="overflow-hidden"
-              >
-                <div className="px-5 pb-5 space-y-2">
-                  {logs.map((log, i) => {
-                    const len = log.end_date
-                      ? Math.round((new Date(log.end_date).getTime() - new Date(log.start_date).getTime()) / 86400000) + 1
-                      : null;
-                    return (
-                      <div key={log.id} className="flex items-center justify-between rounded-xl bg-muted/40 px-4 py-3 text-sm">
-                        <div>
-                          <span className="font-medium">{formatDate(log.start_date)}</span>
-                          {log.end_date && <span className="text-muted-foreground"> → {formatDate(log.end_date)}</span>}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {len && <Badge variant="outline">{len}d</Badge>}
-                          {log.flow_intensity && <Badge variant="outline" className="capitalize">{log.flow_intensity}</Badge>}
-                          {!log.end_date && i === 0 && <Badge className="bg-rose-500 text-white text-[10px]">Active</Badge>}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {showHistory && (
+            <div className="px-5 pb-5 space-y-2">
+              {logs.map((log, i) => {
+                const len = log.end_date
+                  ? Math.round((new Date(log.end_date).getTime() - new Date(log.start_date).getTime()) / 86400000) + 1
+                  : null;
+                return (
+                  <div key={log.id} className="flex items-center justify-between rounded-xl bg-muted/40 px-4 py-3 text-sm">
+                    <div>
+                      <span className="font-medium">{formatDate(log.start_date)}</span>
+                      {log.end_date && <span className="text-muted-foreground"> → {formatDate(log.end_date)}</span>}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {len && <Badge variant="outline">{len}d</Badge>}
+                      {log.flow_intensity && <Badge variant="outline" className="capitalize">{log.flow_intensity}</Badge>}
+                      {!log.end_date && i === 0 && <Badge className="bg-rose-500 text-white text-[10px]">Active</Badge>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>

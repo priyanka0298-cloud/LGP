@@ -19,7 +19,7 @@ const NAV = [
   { label: "Reminders", href: "/reminders", icon: Bell },
   { label: "Marketplace", href: "/marketplace", icon: ShoppingBag },
   { label: "Settings", href: "/settings", icon: Settings },
-  { label: "AI Assistant", href: "/dashboard#ai", icon: Sparkles },
+  { label: "AI Assistant", href: "/dashboard#ai-assistant", icon: Sparkles },
 ];
 
 export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {

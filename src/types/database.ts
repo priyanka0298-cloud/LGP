@@ -24,6 +24,7 @@ export interface Database {
           planning_style: "minimal" | "balanced" | "detailed";
           onboarding_completed: boolean;
           onboarding_step: number;
+          onboarding_goals: string[];
           cycle_tracking_enabled: boolean;
           cycle_length: number | null;
           last_period_date: string | null;
@@ -51,6 +52,7 @@ export interface Database {
           planning_style?: "minimal" | "balanced" | "detailed";
           onboarding_completed?: boolean;
           onboarding_step?: number;
+          onboarding_goals?: string[];
           cycle_tracking_enabled?: boolean;
           push_enabled?: boolean;
         };
@@ -66,6 +68,7 @@ export interface Database {
           planning_style?: "minimal" | "balanced" | "detailed";
           onboarding_completed?: boolean;
           onboarding_step?: number;
+          onboarding_goals?: string[];
           cycle_tracking_enabled?: boolean;
           cycle_length?: number | null;
           last_period_date?: string | null;
@@ -459,6 +462,9 @@ export interface Database {
           title?: string;
           description?: string | null;
           why?: string | null;
+          category?: string;
+          time_horizon?: string;
+          target_date?: string | null;
           status?: "active" | "paused" | "achieved" | "released";
           progress_percent?: number;
           emoji?: string | null;

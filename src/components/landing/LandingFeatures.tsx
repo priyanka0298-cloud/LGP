@@ -33,7 +33,7 @@ const FEATURES = [
   {
     icon: BookOpen,
     title: "Journal & Reflection",
-    description: "Daily pages, weekly reflections, and monthly check-ins with prompts like 'what drained me?' and 'what actually mattered this week?'",
+    description: "Daily pages and weekly Sunday Resets with prompts like 'what drained me?' and 'what actually mattered this week?' Free write when you just need to let it out.",
     gradient: "from-emerald-400 to-teal-500",
     bg: "from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/20",
   },
@@ -61,7 +61,7 @@ const FEATURES = [
   {
     icon: RefreshCw,
     title: "Soft Reset",
-    description: "Bad week? Use the Soft Reset feature — a compassionate fresh start that carries forward only what matters, without the guilt.",
+    description: "Bad week? Use the Soft Reset to clear your task list and start fresh — no judgment, no guilt. A blank slate whenever you need one.",
     gradient: "from-cyan-400 to-sky-500",
     bg: "from-cyan-50 to-sky-50 dark:from-cyan-950/30 dark:to-sky-950/20",
   },

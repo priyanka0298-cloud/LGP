@@ -16,13 +16,14 @@ import {
 import Link from "next/link";
 import { getDayGreeting } from "@/lib/utils";
 import { CommandPalette } from "./CommandPalette";
-import type { Profile } from "@/types";
+import type { Profile, Subscription } from "@/types";
 
 interface TopbarProps {
   profile: Profile | null;
+  subscription?: Subscription | null;
 }
 
-export function Topbar({ profile }: TopbarProps) {
+export function Topbar({ profile, subscription }: TopbarProps) {
   const { theme, setTheme } = useTheme();
   const [cmdOpen, setCmdOpen] = useState(false);
   const router = useRouter();
@@ -43,7 +44,7 @@ export function Topbar({ profile }: TopbarProps) {
 
   return (
     <>
-      <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-border/50 bg-background/80 backdrop-blur-md px-6">
+      <header className="sticky top-0 z-40 flex h-14 md:h-16 items-center justify-between border-b border-border/50 bg-background/80 backdrop-blur-md px-4 md:px-6">
         {/* Greeting */}
         <div className="flex flex-col">
           <p className="text-sm text-muted-foreground">{greeting},</p>
@@ -101,12 +102,14 @@ export function Topbar({ profile }: TopbarProps) {
               <DropdownMenuItem asChild className="rounded-xl cursor-pointer">
                 <Link href="/settings">Profile Settings</Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild className="rounded-xl cursor-pointer">
-                <Link href="/pricing">
-                  <Sparkles className="mr-2 h-4 w-4 text-rose-500" />
-                  Upgrade to Premium
-                </Link>
-              </DropdownMenuItem>
+              {(!subscription || subscription.plan === "free") && (
+                <DropdownMenuItem asChild className="rounded-xl cursor-pointer">
+                  <Link href="/pricing">
+                    <Sparkles className="mr-2 h-4 w-4 text-rose-500" />
+                    Upgrade to Premium
+                  </Link>
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem asChild className="rounded-xl cursor-pointer">
                 <Link href="/contact">Contact Us</Link>
               </DropdownMenuItem>

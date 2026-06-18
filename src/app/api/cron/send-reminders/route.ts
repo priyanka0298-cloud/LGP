@@ -11,7 +11,12 @@ webpush.setVapidDetails(
 export async function GET(request: Request) {
   // Verify cron secret to prevent unauthorized calls
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const queryKey = new URL(request.url).searchParams.get("key");
+  const validTokens = [process.env.CRON_SECRET, process.env.CRON_API_KEY].filter(Boolean);
+  const authorized =
+    validTokens.some(t => authHeader === `Bearer ${t}`) ||
+    validTokens.some(t => queryKey === t);
+  if (!authorized) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

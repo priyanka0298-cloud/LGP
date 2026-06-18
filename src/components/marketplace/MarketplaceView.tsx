@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { Star, Filter, Search, Sparkles, Lock, CheckCircle2, Wand2, X, ListChecks, Repeat2, ChevronRight } from "lucide-react";
+import { Star, Filter, Search, Sparkles, Lock, CheckCircle2, Wand2, X, ListChecks, Repeat2, ChevronRight, Shuffle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { formatCurrency, cn } from "@/lib/utils";
 import type { PlannerTemplate } from "@/types";
 import { TEMPLATE_CONFIGS } from "@/lib/template-configs";
+import { CustomBundleBuilder } from "./CustomBundleBuilder";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
@@ -37,6 +38,7 @@ export function MarketplaceView({ templates, purchasedIds, userId, isPremium }: 
   const [unapplying, setUnapplying] = useState<string | null>(null);
   const [applied, setApplied] = useState<Set<string>>(new Set(purchasedIds));
   const [preview, setPreview] = useState<PlannerTemplate | null>(null);
+  const [showCustomBuilder, setShowCustomBuilder] = useState(false);
   const router = useRouter();
 
   const filtered = templates.filter((t) => {
@@ -134,6 +136,21 @@ export function MarketplaceView({ templates, purchasedIds, userId, isPremium }: 
         </p>
       </div>
 
+      {/* Build Your Own Bundle */}
+      <button
+        onClick={() => setShowCustomBuilder(true)}
+        className="w-full rounded-2xl border border-dashed border-primary/40 bg-gradient-to-r from-rose-50/60 to-purple-50/60 dark:from-rose-950/20 dark:to-purple-950/20 p-4 flex items-center gap-4 hover:border-primary/60 hover:shadow-sm transition-all text-left group"
+      >
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-400 to-purple-500 shadow-sm">
+          <Shuffle className="h-5 w-5 text-white" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-sm">Build Your Own Bundle ✨</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Pick any habits from all our templates — mix and match to create your perfect routine</p>
+        </div>
+        <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 group-hover:text-primary transition-colors" />
+      </button>
+
       {/* Search & filters */}
       <div className="flex flex-col gap-3 sm:flex-row">
         <div className="relative flex-1">
@@ -208,6 +225,9 @@ export function MarketplaceView({ templates, purchasedIds, userId, isPremium }: 
           </div>
         )}
       </div>
+
+      {/* Custom bundle builder — rendered via portal to escape overflow clipping */}
+      {showCustomBuilder && <CustomBundleBuilder onClose={() => setShowCustomBuilder(false)} isPremium={isPremium} />}
 
       {/* Preview panel */}
       {preview && (

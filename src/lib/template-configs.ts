@@ -25,8 +25,8 @@ export const TEMPLATE_CONFIGS: Record<string, TemplateConfig> = {
       { name: "Evening wind-down routine", emoji: "🌙", frequency: "daily", category: "self_care" },
     ],
     tasks: [
-      { title: "Set your one thing for today", category: "must_do", emoji: "⭐" },
-      { title: "Do one thing for future you", category: "should_do", emoji: "🌱" },
+      { title: "Set my one thing for today", category: "must_do", emoji: "⭐" },
+      { title: "Do one thing for future me", category: "should_do", emoji: "🌱" },
     ],
     welcome_message: "Your Daily Soft Life Planner is ready! 4 habits added to help you start and end each day with ease. 🌿",
   },
@@ -71,7 +71,7 @@ export const TEMPLATE_CONFIGS: Record<string, TemplateConfig> = {
     tasks: [
       { title: "Write out my dream life in full detail", category: "must_do", emoji: "📝" },
       { title: "Identify 3 life areas to focus on", category: "must_do", emoji: "🎯" },
-      { title: "Find images or words that represent your vision", category: "should_do", emoji: "🖼️" },
+      { title: "Find images or words that represent my vision", category: "should_do", emoji: "🖼️" },
       { title: "Set one concrete goal toward the vision", category: "must_do", emoji: "🌱" },
     ],
     welcome_message: "Your Vision Board Kit is live! 3 daily habits and 4 tasks to get clear on what you really want. ✨",
@@ -79,17 +79,17 @@ export const TEMPLATE_CONFIGS: Record<string, TemplateConfig> = {
 
   "ADHD-Friendly Habit Tracker": {
     habits: [
-      { name: "Body doubling session (work/study with someone)", emoji: "🧑‍💻", frequency: "daily", category: "focus" },
+      { name: "Body doubling session (work alongside someone)", emoji: "🧑‍💻", frequency: "daily", category: "focus" },
       { name: "2-minute tidy before bed", emoji: "🧹", frequency: "daily", category: "home" },
       { name: "Take meds / vitamins", emoji: "💊", frequency: "daily", category: "wellness" },
-      { name: "Drink water (set alarm if needed)", emoji: "💧", frequency: "daily", category: "wellness" },
+      { name: "Drink water throughout the day", emoji: "💧", frequency: "daily", category: "wellness" },
       { name: "One thing, then celebrate", emoji: "🎯", frequency: "daily", category: "focus" },
       { name: "Prep tomorrow's outfit or bag", emoji: "👜", frequency: "daily", category: "planning" },
     ],
     tasks: [
       { title: "Write today's ONE most important task", category: "must_do", emoji: "⭐" },
       { title: "Set a timer for 25 min and start (don't finish, just start)", category: "must_do", emoji: "⏱️" },
-      { title: "Text a friend your plan for accountability", category: "should_do", emoji: "📱" },
+      { title: "Text a friend my plan for accountability", category: "should_do", emoji: "📱" },
     ],
     welcome_message: "Your ADHD-friendly tracker is set! 6 small habits — pick 1–2 to start. You've got this. 💜",
   },
@@ -174,7 +174,7 @@ export const TEMPLATE_CONFIGS: Record<string, TemplateConfig> = {
       { name: "Weekly sort + prioritize dump", emoji: "📋", frequency: "weekly", category: "planning" },
     ],
     tasks: [
-      { title: "Do a full brain dump right now — everything on your mind", category: "must_do", emoji: "🧠" },
+      { title: "Do a full brain dump — get everything out of my head", category: "must_do", emoji: "🧠" },
       { title: "Sort my brain dump into: do, delegate, delete, defer", category: "must_do", emoji: "📋" },
       { title: "Pick the ONE thing from the dump to do today", category: "must_do", emoji: "⭐" },
       { title: "Let go of at least 3 items from the list", category: "should_do", emoji: "🍃" },
@@ -191,7 +191,7 @@ export const TEMPLATE_CONFIGS: Record<string, TemplateConfig> = {
     tasks: [
       { title: "Write my vision in 5 years — no limits", category: "must_do", emoji: "🌟" },
       { title: "Choose 3 life domains to focus on (career, health, love, etc.)", category: "must_do", emoji: "🎯" },
-      { title: "Collect 10 images or words that match your vision", category: "should_do", emoji: "🖼️" },
+      { title: "Collect 10 images or words that match my vision", category: "should_do", emoji: "🖼️" },
       { title: "Write one affirmation per domain", category: "should_do", emoji: "💬" },
     ],
     welcome_message: "Your Vision Board Workbook is set! 3 habits and 4 tasks to help you get crystal clear on your dream life. ✨",
@@ -207,7 +207,7 @@ export const TEMPLATE_CONFIGS: Record<string, TemplateConfig> = {
     tasks: [
       { title: "Write out today's ONE most important task", category: "must_do", emoji: "⭐" },
       { title: "Break that task into steps under 10 minutes each", category: "must_do", emoji: "🔀" },
-      { title: "Set up your workspace before starting (clear desk, water, headphones)", category: "should_do", emoji: "🎧" },
+      { title: "Set up my workspace before starting (clear desk, water, headphones)", category: "should_do", emoji: "🎧" },
     ],
     welcome_message: "Your ADHD-Friendly Focus Planner is live! 4 daily habits to protect your focus and reduce overwhelm. You've got this. 🎯",
   },
@@ -220,7 +220,7 @@ export const TEMPLATE_CONFIGS: Record<string, TemplateConfig> = {
       { name: "Set my one intention for the day", emoji: "🌟", frequency: "daily", category: "mindset" },
     ],
     tasks: [
-      { title: "Design your ideal 20-minute morning flow", category: "must_do", emoji: "📝" },
+      { title: "Design my ideal 20-minute morning flow", category: "must_do", emoji: "📝" },
       { title: "Prep the night before (clothes, bag, breakfast)", category: "should_do", emoji: "🌙" },
     ],
     welcome_message: "Your Mindful Morning Routine is set! 4 habits to start each day from a place of calm instead of chaos. 🌅",
@@ -233,8 +233,8 @@ export const TEMPLATE_CONFIGS: Record<string, TemplateConfig> = {
     ],
     tasks: [
       { title: "Set up my journaling space (pen, notebook, or app)", category: "must_do", emoji: "✏️" },
-      { title: "Write about what you want your life to feel like in 1 year", category: "must_do", emoji: "🌈" },
-      { title: "Identify one belief about yourself you want to examine", category: "should_do", emoji: "🔎" },
+      { title: "Write about what I want my life to feel like in 1 year", category: "must_do", emoji: "🌈" },
+      { title: "Identify one belief about myself I want to examine", category: "should_do", emoji: "🔎" },
     ],
     welcome_message: "Your Journal Prompts for Self-Discovery are ready! 2 habits and 3 starter tasks to begin your reflection journey. 📓",
   },
@@ -264,9 +264,48 @@ export const TEMPLATE_CONFIGS: Record<string, TemplateConfig> = {
     tasks: [
       { title: "Plan one thing per day that brings ease", category: "must_do", emoji: "🌿" },
       { title: "Set a boundary around one draining thing this week", category: "must_do", emoji: "🚧" },
-      { title: "Add a non-negotiable rest block to your schedule", category: "must_do", emoji: "🛌" },
-      { title: "Write about what 'soft life' means to you right now", category: "if_energy", emoji: "📝" },
+      { title: "Add a non-negotiable rest block to my schedule", category: "must_do", emoji: "🛌" },
+      { title: "Write about what 'soft life' means to me right now", category: "if_energy", emoji: "📝" },
     ],
     welcome_message: "Your Soft Life Weekly Spread is ready! 3 gentle weekly habits and 4 tasks. This week, choose ease. 🌸",
   },
 };
+
+export type HabitSuggestion = {
+  name: string;
+  emoji: string;
+  frequency: "daily" | "weekly";
+  category: string;
+};
+
+const CATEGORY_ORDER = ["wellness", "mindset", "self_care", "planning", "goals", "focus", "growth", "home", "relationships", "finance"];
+
+export function getAllHabitSuggestions(): Record<string, HabitSuggestion[]> {
+  const seen = new Set<string>();
+  const grouped: Record<string, HabitSuggestion[]> = {};
+
+  for (const config of Object.values(TEMPLATE_CONFIGS)) {
+    for (const h of config.habits ?? []) {
+      const key = h.name.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const cat = h.category ?? "wellness";
+      grouped[cat] ??= [];
+      grouped[cat].push({
+        name: h.name,
+        emoji: h.emoji ?? "🌸",
+        frequency: (h.frequency as "daily" | "weekly") ?? "daily",
+        category: cat,
+      });
+    }
+  }
+
+  const ordered: Record<string, HabitSuggestion[]> = {};
+  for (const cat of CATEGORY_ORDER) {
+    if (grouped[cat]) ordered[cat] = grouped[cat];
+  }
+  for (const cat of Object.keys(grouped)) {
+    if (!ordered[cat]) ordered[cat] = grouped[cat];
+  }
+  return ordered;
+}

@@ -58,15 +58,21 @@ export async function POST(request: Request) {
 
   // Create habits — skip any that already exist by name for this user
   if (config.habits?.length) {
-    const { data: existingHabits } = await supabase
-      .from("habits")
-      .select("name")
-      .eq("user_id", user.id);
+    const [{ data: existingHabits }, { data: subscription }] = await Promise.all([
+      supabase.from("habits").select("name, is_active").eq("user_id", user.id),
+      supabase.from("subscriptions").select("plan").eq("user_id", user.id).maybeSingle(),
+    ]);
 
     const existingNames = new Set((existingHabits ?? []).map((h) => h.name.toLowerCase()));
 
+    // Free plan holds 5 active habits — cap what a template can add
+    const isPremium = subscription?.plan !== "free";
+    const activeCount = (existingHabits ?? []).filter((h) => h.is_active).length;
+    const remainingSlots = isPremium ? config.habits.length : Math.max(0, 5 - activeCount);
+
     const newHabits = config.habits
       .filter((h) => !existingNames.has(h.name.toLowerCase()))
+      .slice(0, remainingSlots)
       .map((h, i) => ({
         user_id: user.id,
         name: h.name,

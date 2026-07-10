@@ -108,8 +108,11 @@ export function getPhaseInfo(logs: PeriodLog[], avgCycleLength: number): PhaseIn
     (nextPeriodDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
   );
 
+  // A period still marked in-progress means we're menstrual, even past day 5 —
+  // but only within reason (a log open >10 days is likely a forgotten end date)
+  const periodOpen = !lastLog.end_date;
   let phase: CyclePhase;
-  if (dayOfCycle <= 5) phase = "menstrual";
+  if (dayOfCycle <= 5 || (periodOpen && dayOfCycle <= 10)) phase = "menstrual";
   else if (dayOfCycle <= 13) phase = "follicular";
   else if (dayOfCycle <= 16) phase = "ovulatory";
   else phase = "luteal";

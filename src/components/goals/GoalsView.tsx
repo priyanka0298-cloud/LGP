@@ -32,7 +32,9 @@ const HORIZONS = [
   { value: "long_term", label: "Long term" },
 ];
 
-export function GoalsView({ userId, initialGoals }: { userId: string; initialGoals: Goal[] }) {
+const FREE_GOAL_LIMIT = 3;
+
+export function GoalsView({ userId, initialGoals, isPremium = true }: { userId: string; initialGoals: Goal[]; isPremium?: boolean }) {
   const [goals, setGoals] = useState<Goal[]>(initialGoals);
   const [showForm, setShowForm] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -65,6 +67,10 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
 
   async function saveAndGenerateSteps() {
     if (!title.trim()) return;
+    if (!canAddGoal) {
+      toast.error(`The free plan holds ${FREE_GOAL_LIMIT} active goals — achieve one or upgrade for unlimited ✨`);
+      return;
+    }
     setSaving(true);
 
     const catEmoji = CATEGORIES.find(c => c.value === category)?.emoji ?? "✨";
@@ -90,6 +96,10 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
 
   async function saveManual() {
     if (!title.trim()) return;
+    if (!canAddGoal) {
+      toast.error(`The free plan holds ${FREE_GOAL_LIMIT} active goals — achieve one or upgrade for unlimited ✨`);
+      return;
+    }
     setSaving(true);
 
     const catEmoji = CATEGORIES.find(c => c.value === category)?.emoji ?? "✨";
@@ -190,6 +200,15 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
 
   const active = goals.filter(g => g.status === "active" || g.status === "paused");
   const achieved = goals.filter(g => g.status === "achieved");
+  const canAddGoal = isPremium || active.length < FREE_GOAL_LIMIT;
+
+  function openGoalForm() {
+    if (!canAddGoal) {
+      toast.error(`The free plan holds ${FREE_GOAL_LIMIT} active goals — achieve one or upgrade for unlimited ✨`);
+      return;
+    }
+    setShowForm(true);
+  }
 
   return (
     <div className="min-h-screen p-6 md:p-8 max-w-3xl mx-auto">
@@ -199,7 +218,7 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
           <h1 className="font-display text-xl md:text-3xl font-bold">Goals ✨</h1>
           <p className="mt-1 text-muted-foreground text-sm">Big dreams, broken into tiny steps. No pressure.</p>
         </div>
-        <Button variant="gradient" size="sm" className="gap-2 shadow-glow shrink-0" onClick={() => setShowForm(true)}>
+        <Button variant="gradient" size="sm" className="gap-2 shadow-glow shrink-0" onClick={openGoalForm}>
           <Plus className="h-4 w-4" /> New Goal
         </Button>
       </div>
@@ -361,7 +380,7 @@ export function GoalsView({ userId, initialGoals }: { userId: string; initialGoa
           <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
             Add a goal and break it into steps — with AI or on your own. No hustle required.
           </p>
-          <Button variant="gradient" onClick={() => setShowForm(true)} className="gap-2 shadow-glow">
+          <Button variant="gradient" onClick={openGoalForm} className="gap-2 shadow-glow">
             <Plus className="h-4 w-4" /> Set your first goal
           </Button>
         </div>

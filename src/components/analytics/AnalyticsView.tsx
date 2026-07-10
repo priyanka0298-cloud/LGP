@@ -168,7 +168,7 @@ export function AnalyticsView({ moods, tasks, habits, completions }: AnalyticsVi
                   <p className="font-bold text-base leading-snug">
                     {MOOD_META[Math.round(avgMood)]?.label}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Avg mood · {moodsWithScore.length} logs</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Avg mood · {moodsWithScore.length} log{moodsWithScore.length !== 1 && "s"}</p>
                 </>
               ) : (
                 <>
@@ -200,7 +200,7 @@ export function AnalyticsView({ moods, tasks, habits, completions }: AnalyticsVi
                   <p className="font-bold text-base leading-snug">
                     {getEnergyLabel(Math.round(avgEnergy))}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Avg energy · {moodsWithEnergy.length} logs</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Avg energy · {moodsWithEnergy.length} log{moodsWithEnergy.length !== 1 && "s"}</p>
                 </>
               ) : (
                 <>

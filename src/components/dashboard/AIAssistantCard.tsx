@@ -75,7 +75,7 @@ export function AIAssistantCard({ profile, tasks, mood }: AIAssistantCardProps) 
   }
 
   return (
-    <Card className="overflow-hidden">
+    <Card id="ai-assistant" className="overflow-hidden scroll-mt-20">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-base">

@@ -33,6 +33,14 @@ export function WeeklyPlannerView({
   const [tasksByDate, setTasksByDate] = useState(initialTasksByDate);
   const supabase = createClient();
 
+  // On mobile the 7 day columns stack vertically — jump to today on load
+  useEffect(() => {
+    if (window.innerWidth >= 640) return;
+    const todayStr = format(new Date(), "yyyy-MM-dd");
+    const el = document.querySelector(`[data-planner-date="${todayStr}"]`);
+    if (el) el.scrollIntoView({ block: "start" });
+  }, []);
+
   useEffect(() => {
     const weekStartStr = format(weekStart, "yyyy-MM-dd");
     const weekEndStr = format(weekEnd, "yyyy-MM-dd");
@@ -152,15 +160,16 @@ export function WeeklyPlannerView({
         {weekDays.map((day) => {
           const dateStr = format(day, "yyyy-MM-dd");
           return (
-            <DayColumn
-              key={dateStr}
-              date={day}
-              tasks={tasksByDate[dateStr] ?? []}
-              userId={userId}
-              onTaskUpdate={(t) => handleTaskUpdate(dateStr, t)}
-              onTaskAdded={(t) => handleTaskAdded(dateStr, t)}
-              onTaskDeleted={(id) => handleTaskDeleted(dateStr, id)}
-            />
+            <div key={dateStr} data-planner-date={dateStr} className="scroll-mt-20">
+              <DayColumn
+                date={day}
+                tasks={tasksByDate[dateStr] ?? []}
+                userId={userId}
+                onTaskUpdate={(t) => handleTaskUpdate(dateStr, t)}
+                onTaskAdded={(t) => handleTaskAdded(dateStr, t)}
+                onTaskDeleted={(id) => handleTaskDeleted(dateStr, id)}
+              />
+            </div>
           );
         })}
       </div>

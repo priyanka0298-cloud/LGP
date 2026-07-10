@@ -194,7 +194,8 @@ export const PRICING_PLANS = [
     description: "Best value for committed planners",
     features: [
       "Everything in Premium Monthly",
-      "2 months free (save $40)",
+      "Save $40 vs monthly (33% off)",
+      "7-day free trial included",
       "Early access to new features",
       "Soft life challenges with the community (coming soon)",
       "Virtual accountability sessions (coming soon)",

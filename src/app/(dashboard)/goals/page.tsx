@@ -8,12 +8,19 @@ export default async function GoalsPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data: goals } = await supabase
-    .from("goals")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("is_pinned", { ascending: false })
-    .order("created_at", { ascending: false });
+  const [{ data: goals }, { data: subscription }] = await Promise.all([
+    supabase
+      .from("goals")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("is_pinned", { ascending: false })
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("subscriptions")
+      .select("*")
+      .eq("user_id", user.id)
+      .maybeSingle(),
+  ]);
 
-  return <GoalsView userId={user.id} initialGoals={goals ?? []} />;
+  return <GoalsView userId={user.id} initialGoals={goals ?? []} isPremium={subscription?.plan !== "free"} />;
 }

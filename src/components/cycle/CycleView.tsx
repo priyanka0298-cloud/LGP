@@ -50,6 +50,9 @@ export function CycleView({ logs: initialLogs, avgCycleLength, userId, subscript
   const phase = phaseInfo?.phase;
   const config = phase ? PHASE_CONFIG[phase] : null;
   const activeCycle = logs[0] && !logs[0].end_date ? logs[0] : null;
+  const daysSincePeriodStart = activeCycle
+    ? Math.floor((Date.now() - new Date(activeCycle.start_date).getTime()) / (1000 * 60 * 60 * 24))
+    : 0;
   const calculatedAvg = getCycleLength(logs);
 
   async function startPeriod() {
@@ -249,6 +252,11 @@ export function CycleView({ logs: initialLogs, avgCycleLength, userId, subscript
                     Period in progress since {formatDate(activeCycle.start_date)}
                     {activeCycle.flow_intensity && <Badge variant="outline" className="capitalize">{activeCycle.flow_intensity}</Badge>}
                   </div>
+                  {daysSincePeriodStart > 10 && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                      This period has been open for {daysSincePeriodStart} days — forgot to log the end? Tap &ldquo;Period ended today&rdquo; to close it.
+                    </p>
+                  )}
                   <div className="flex gap-2 flex-wrap">
                     <Button variant="outline" onClick={endPeriod} disabled={saving}>
                       Period ended today

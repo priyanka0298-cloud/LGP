@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import { Sparkles, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Mood, Profile } from "@/types";
@@ -56,11 +55,7 @@ export function DailyAffirmation({ mood, profile }: DailyAffirmationProps) {
   }
 
   return (
-    <motion.div
-      className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-rose-50 via-purple-50 to-sky-50 dark:from-rose-950/30 dark:via-purple-950/20 dark:to-sky-950/30 border border-border/40 px-5 py-4"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-    >
+    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-rose-50 via-purple-50 to-sky-50 dark:from-rose-950/30 dark:via-purple-950/20 dark:to-sky-950/30 border border-border/40 px-5 py-4">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-rose-400 to-pink-500">
@@ -81,6 +76,6 @@ export function DailyAffirmation({ mood, profile }: DailyAffirmationProps) {
           <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
         </Button>
       </div>
-    </motion.div>
+    </div>
   );
 }

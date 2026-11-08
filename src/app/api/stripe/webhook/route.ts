@@ -40,10 +40,8 @@ export async function POST(request: Request) {
         .single();
 
       if (sub) {
-        const plan = subscription.items.data[0]?.price.id ===
-          process.env.NEXT_PUBLIC_STRIPE_PREMIUM_YEARLY_PRICE_ID
-          ? "premium"
-          : "premium";
+        // past_due keeps access while Stripe retries the card; unpaid, canceled, etc. lose it
+        const plan = ["active", "trialing", "past_due"].includes(subscription.status) ? "premium" : "free";
 
         await supabase.from("subscriptions").update({
           stripe_subscription_id: subscription.id,

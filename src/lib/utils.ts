@@ -154,3 +154,9 @@ export function isWeekend(date: Date): boolean {
   const day = date.getDay();
   return day === 0 || day === 6;
 }
+
+/** Only allow same-site paths like "/pricing" — blocks "https://evil.com", "//evil.com", "@evil.com" */
+export function safeRedirectPath(path: string | null | undefined, fallback = "/dashboard"): string {
+  if (!path || !path.startsWith("/") || path.startsWith("//") || path.startsWith("/\\")) return fallback;
+  return path;
+}

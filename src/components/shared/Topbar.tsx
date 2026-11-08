@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
-import { getDayGreeting } from "@/lib/utils";
+import { getDayGreeting, isPremiumPlan } from "@/lib/utils";
 import { CommandPalette } from "./CommandPalette";
 import type { Profile, Subscription } from "@/types";
 
@@ -102,7 +102,7 @@ export function Topbar({ profile, subscription }: TopbarProps) {
               <DropdownMenuItem asChild className="rounded-xl cursor-pointer">
                 <Link href="/settings">Profile Settings</Link>
               </DropdownMenuItem>
-              {(!subscription || subscription.plan === "free") && (
+              {!isPremiumPlan(subscription?.plan) && (
                 <DropdownMenuItem asChild className="rounded-xl cursor-pointer">
                   <Link href="/pricing">
                     <Sparkles className="mr-2 h-4 w-4 text-rose-500" />

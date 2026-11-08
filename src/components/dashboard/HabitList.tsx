@@ -5,7 +5,7 @@ import { Plus, Flame, Lock, X, Pencil, Trash2, Check } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { cn, pluralize } from "@/lib/utils";
+import { cn, pluralize, isPremiumPlan } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import type { Habit, Subscription } from "@/types";
@@ -25,7 +25,7 @@ const FREE_LIMIT = 5;
 const QUICK_EMOJIS = ["✨", "💧", "🏃", "📚", "🧘", "🥗", "😴", "🌿", "💪", "🎯"];
 
 export function HabitList({ habits, onToggle, onAdded, onUpdated, onDeleted, subscription, userId }: HabitListProps) {
-  const isPremium = subscription?.plan !== "free";
+  const isPremium = isPremiumPlan(subscription?.plan);
   const completedCount = habits.filter((h) => h.completedToday).length;
   const progress = habits.length ? (completedCount / habits.length) * 100 : 0;
   const [adding, setAdding] = useState(false);

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import type { HabitSuggestion } from "@/lib/template-configs";
+import { isPremiumPlan } from "@/lib/utils";
 
 const FREE_HABIT_LIMIT = 5;
 
@@ -21,7 +22,7 @@ export async function POST(request: Request) {
   const baseOrder = existingHabits?.length ?? 0;
 
   // Free plan holds 5 active habits — cap what a bundle can add
-  const isPremium = subscription?.plan !== "free";
+  const isPremium = isPremiumPlan(subscription?.plan);
   const activeCount = (existingHabits ?? []).filter((h) => h.is_active).length;
   const remainingSlots = isPremium ? habits.length : Math.max(0, FREE_HABIT_LIMIT - activeCount);
 

@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
+import { cn, isPremiumPlan } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -44,7 +44,7 @@ export function CycleView({ logs: initialLogs, avgCycleLength, userId, subscript
   const [selectedDate, setSelectedDate] = useState(today);
   const supabase = createClient();
 
-  const isPremium = subscription?.plan !== "free";
+  const isPremium = isPremiumPlan(subscription?.plan);
 
   const phaseInfo = getPhaseInfo(logs, avgCycleLength);
   const phase = phaseInfo?.phase;

@@ -109,12 +109,17 @@ export function formatCurrency(cents: number, currency = "USD"): string {
   }).format(cents / 100);
 }
 
+// Only an explicit paid plan counts — a missing subscription row is free, not premium
+export function isPremiumPlan(plan: string | null | undefined): boolean {
+  return plan === "premium" || plan === "lifetime";
+}
+
 export function isWithinFreeLimit(
   plan: string,
   resourceType: string,
   currentCount: number
 ): boolean {
-  if (plan !== "free") return true;
+  if (isPremiumPlan(plan)) return true;
   const limits: Record<string, number> = {
     habits: 5,
     goals: 3,

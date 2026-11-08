@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { TEMPLATE_CONFIGS } from "@/lib/template-configs";
 import type { TemplateConfig } from "@/types";
 import { format, addDays } from "date-fns";
+import { isPremiumPlan } from "@/lib/utils";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -66,7 +67,7 @@ export async function POST(request: Request) {
     const existingNames = new Set((existingHabits ?? []).map((h) => h.name.toLowerCase()));
 
     // Free plan holds 5 active habits — cap what a template can add
-    const isPremium = subscription?.plan !== "free";
+    const isPremium = isPremiumPlan(subscription?.plan);
     const activeCount = (existingHabits ?? []).filter((h) => h.is_active).length;
     const remainingSlots = isPremium ? config.habits.length : Math.max(0, 5 - activeCount);
 

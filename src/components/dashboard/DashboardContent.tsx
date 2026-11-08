@@ -16,7 +16,7 @@ import { CycleWidget } from "./CycleWidget";
 import { FoodLogCard } from "./FoodLogCard";
 import type { Task, TaskCategory, Habit, Mood, Profile, Subscription, WeeklyPlan } from "@/types";
 import { TASK_CATEGORY_CONFIG, MOOD_EMOJIS } from "@/types";
-import { cn, getCompletionRate } from "@/lib/utils";
+import { cn, getCompletionRate, isPremiumPlan } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -186,7 +186,7 @@ export function DashboardContent({
           )}
         </div>
         <div className="flex items-center gap-2">
-          {subscription?.plan === "free" && (
+          {!isPremiumPlan(subscription?.plan) && (
             <Badge variant="soft" className="hidden sm:flex">Free plan</Badge>
           )}
           <Button variant="soft" size="sm" className="gap-1.5" onClick={() => { setTasks([]); toast.success("Fresh start ✨ Your tasks are cleared for a gentle reset."); }}>

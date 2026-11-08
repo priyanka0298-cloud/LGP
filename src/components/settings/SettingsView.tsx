@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import { cn, formatDate } from "@/lib/utils";
+import { cn, formatDate, isPremiumPlan } from "@/lib/utils";
 import type { Profile, Subscription, AccentColor } from "@/types";
 
 const profileSchema = z.object({
@@ -71,7 +71,7 @@ export function SettingsView({
   const [reminderTime, setReminderTime] = useState(profile?.daily_reminder_time ?? "08:00");
   const [reminderFrequency, setReminderFrequency] = useState<"daily" | "weekly">(profile?.reminder_frequency ?? "weekly");
   const [savingNotifications, setSavingNotifications] = useState(false);
-  const isPremium = subscription?.plan !== "free";
+  const isPremium = isPremiumPlan(subscription?.plan);
 
   function applyAccentColor(color: AccentColor) {
     setSelectedColor(color);
@@ -338,12 +338,12 @@ export function SettingsView({
                         </p>
                       )}
                     </div>
-                    <Badge variant={subscription?.plan !== "free" ? "default" : "outline"} className="capitalize">
+                    <Badge variant={isPremiumPlan(subscription?.plan) ? "default" : "outline"} className="capitalize">
                       {(subscription?.plan ?? "free").replace("_", " ")}
                     </Badge>
                   </div>
 
-                  {subscription?.plan === "free" ? (
+                  {!isPremiumPlan(subscription?.plan) ? (
                     <div className="rounded-2xl bg-gradient-to-br from-rose-50 to-purple-50 dark:from-rose-950/30 dark:to-purple-950/20 border border-border/40 p-4">
                       <p className="font-semibold mb-1 flex items-center gap-1.5">
                         <Sparkles className="h-4 w-4 text-primary" />

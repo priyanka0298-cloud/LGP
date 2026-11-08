@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { GoalsView } from "@/components/goals/GoalsView";
+import { isPremiumPlan } from "@/lib/utils";
 
 export const metadata = { title: "Goals" };
 
@@ -22,5 +23,5 @@ export default async function GoalsPage() {
       .maybeSingle(),
   ]);
 
-  return <GoalsView userId={user.id} initialGoals={goals ?? []} isPremium={subscription?.plan !== "free"} />;
+  return <GoalsView userId={user.id} initialGoals={goals ?? []} isPremium={isPremiumPlan(subscription?.plan)} />;
 }

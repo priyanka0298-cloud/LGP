@@ -246,7 +246,7 @@ export function SettingsView({
                       </div>
                       <div className="space-y-1.5">
                         <Label htmlFor="pronouns">Pronouns <span className="text-muted-foreground font-normal">(optional)</span></Label>
-                        <Input id="pronouns" placeholder="e.g. she/her" {...register("pronouns")} />
+                        <Input id="pronouns" placeholder="e.g. they/them, she/her, he/him" {...register("pronouns")} />
                       </div>
                       <div className="space-y-1.5">
                         <Label htmlFor="timezone">Timezone</Label>

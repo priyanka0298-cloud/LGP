@@ -69,7 +69,7 @@ export function LandingHero() {
           <motion.div variants={itemVariants}>
             <Badge variant="soft" className="gap-1.5 px-4 py-1.5 text-sm font-medium rounded-full">
               <Sparkles className="h-3.5 w-3.5" />
-              Anti-hustle planning for ambitious women
+              Anti-hustle planning for busy minds
             </Badge>
           </motion.div>
 
@@ -87,7 +87,7 @@ export function LandingHero() {
             variants={itemVariants}
             className="max-w-2xl text-xl text-muted-foreground leading-relaxed text-balance"
           >
-            A digital planning sanctuary for overwhelmed, ambitious women.
+            A digital planning sanctuary for anyone who’s ambitious but overwhelmed.
             Weekly plans, habit tracking, journaling, and AI-powered
             productivity — without the guilt or hustle culture.
           </motion.p>

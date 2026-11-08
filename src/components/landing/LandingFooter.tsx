@@ -34,7 +34,7 @@ export function LandingFooter() {
               Planning for the rest of us. Anti-hustle, pro-self-compassion.
             </p>
             <p className="mt-4 text-xs text-muted-foreground">
-              🌸 Made with love for ambitious women everywhere
+              🌸 Made with love for busy minds everywhere
             </p>
           </div>
 
@@ -64,7 +64,7 @@ export function LandingFooter() {
             © {new Date().getFullYear()} Softlivi. All rights reserved.
           </p>
           <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            Built with <Heart className="h-3.5 w-3.5 fill-rose-500 text-rose-500" /> for women who are done with burnout
+            Built with <Heart className="h-3.5 w-3.5 fill-rose-500 text-rose-500" /> for anyone who’s done with burnout
           </p>
         </div>
       </div>

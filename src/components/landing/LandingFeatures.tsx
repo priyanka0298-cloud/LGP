@@ -92,7 +92,7 @@ export function LandingFeatures() {
             <span className="gradient-text">you actually work</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto text-balance">
-            Not the way productivity gurus say you should. Real features for real women who are doing their best.
+            Not the way productivity gurus say you should. Real features for real people who are doing their best.
           </p>
         </motion.div>
 

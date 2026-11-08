@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     template: "%s | Softlivi",
   },
   description:
-    "A digital planning and wellness platform for overwhelmed, ambitious women. Gentle planning, habit tracking, journaling, and AI-powered productivity — without the guilt.",
+    "A digital planning and wellness platform for anyone who’s ambitious but overwhelmed. Gentle planning, habit tracking, journaling, and AI-powered productivity — without the guilt.",
   keywords: [
     "planner",
     "productivity",
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     siteName: "Softlivi",
     title: "Softlivi — Live Softly. Plan Gently.",
     description:
-      "Gentle planning, habit tracking, and AI-powered wellness for ambitious women who are done with hustle culture.",
+      "Gentle planning, habit tracking, and AI-powered wellness for anyone who’s done with hustle culture.",
   },
   twitter: {
     card: "summary_large_image",

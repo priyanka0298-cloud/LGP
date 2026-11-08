@@ -32,7 +32,17 @@ export interface TemplateConfig {
 export type TaskStatus = "pending" | "in_progress" | "done" | "skipped" | "rolled_over";
 export type MoodLabel = "terrible" | "rough" | "meh" | "okay" | "good" | "great" | "amazing";
 export type SubscriptionPlan = "free" | "premium" | "lifetime";
-export type AccentColor = "rose" | "lavender" | "peach" | "sage" | "sky";
+export type AccentColor = "rose" | "lavender" | "peach" | "sage" | "sky" | "slate";
+
+// Swatches use fixed hex values — rose-*/pink-* classes follow the active accent
+export const ACCENT_OPTIONS: Array<{ id: AccentColor; label: string; swatch: string }> = [
+  { id: "rose", label: "Rose", swatch: "#fb7295" },
+  { id: "lavender", label: "Lavender", swatch: "#a78bfa" },
+  { id: "peach", label: "Peach", swatch: "#fb923c" },
+  { id: "sage", label: "Sage", swatch: "#34d399" },
+  { id: "sky", label: "Sky", swatch: "#38bdf8" },
+  { id: "slate", label: "Slate", swatch: "#64748b" },
+];
 
 export interface PeriodLog {
   id: string;

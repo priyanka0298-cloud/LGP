@@ -248,7 +248,7 @@ export function CycleView({ logs: initialLogs, avgCycleLength, userId, subscript
               {activeCycle ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <div className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
+                    <div className="h-2 w-2 rounded-full bg-blush-500 animate-pulse" />
                     Period in progress since {formatDate(activeCycle.start_date)}
                     {activeCycle.flow_intensity && <Badge variant="outline" className="capitalize">{activeCycle.flow_intensity}</Badge>}
                   </div>
@@ -408,7 +408,7 @@ export function CycleView({ logs: initialLogs, avgCycleLength, userId, subscript
                     <div className="flex items-center gap-2">
                       {len && <Badge variant="outline">{len}d</Badge>}
                       {log.flow_intensity && <Badge variant="outline" className="capitalize">{log.flow_intensity}</Badge>}
-                      {!log.end_date && i === 0 && <Badge className="bg-rose-500 text-white text-[10px]">Active</Badge>}
+                      {!log.end_date && i === 0 && <Badge className="bg-blush-500 text-white text-[10px]">Active</Badge>}
                     </div>
                   </div>
                 );

@@ -1,4 +1,13 @@
 import type { Config } from "tailwindcss";
+import colors from "tailwindcss/colors";
+
+const accentScale = (prefix: string) =>
+  Object.fromEntries(
+    [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].map((shade) => [
+      shade,
+      `rgb(var(--${prefix}-${shade}) / <alpha-value>)`,
+    ])
+  );
 
 const config: Config = {
   darkMode: ["class"],
@@ -47,8 +56,15 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Brand-specific palette
-        rose: {
+        // rose/pink/purple/violet follow the user's accent color (see globals.css)
+        rose: accentScale("brand"),
+        pink: accentScale("brand2"),
+        purple: accentScale("brand3"),
+        violet: accentScale("brand3"),
+        // Fixed purple for meanings that shouldn't change with the accent (e.g. ovulation)
+        iris: colors.purple,
+        // Fixed rose for meanings that shouldn't change with the accent (e.g. period tracking)
+        blush: {
           50: "#fff1f5",
           100: "#ffe4ec",
           200: "#fecdd6",
@@ -59,6 +75,7 @@ const config: Config = {
           700: "#be123c",
           800: "#9f1239",
           900: "#881337",
+          950: "#4c0519",
         },
         lavender: {
           50: "#f5f3ff",

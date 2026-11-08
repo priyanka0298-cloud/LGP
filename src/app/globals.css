@@ -41,17 +41,56 @@
     --gradient-hero: linear-gradient(135deg, #fce7f3 0%, #f3e8ff 50%, #e0f2fe 100%);
   }
 
-  /* ── Accent color overrides ── */
-  /* rose is the default — no override needed */
+  /* ── Accent color overrides ──
+     data-accent sits on <html> (client) and on the app shell (server render),
+     so dark rules match both `.dark[data-accent]` and `.dark [data-accent]`. */
+  [data-accent="rose"]     { --primary: 340 82% 60%; --ring: 340 82% 60%; }
   [data-accent="lavender"] { --primary: 263 75% 62%; --ring: 263 75% 62%; }
   [data-accent="peach"]    { --primary: 25 85% 58%;  --ring: 25 85% 58%;  }
   [data-accent="sage"]     { --primary: 142 45% 48%; --ring: 142 45% 48%; }
   [data-accent="sky"]      { --primary: 200 75% 50%; --ring: 200 75% 50%; }
+  [data-accent="slate"]    { --primary: 215 19% 35%; --ring: 215 19% 35%; }
 
-  .dark[data-accent="lavender"] { --primary: 263 75% 68%; --ring: 263 75% 68%; }
-  .dark[data-accent="peach"]    { --primary: 25 85% 63%;  --ring: 25 85% 63%;  }
-  .dark[data-accent="sage"]     { --primary: 142 45% 55%; --ring: 142 45% 55%; }
-  .dark[data-accent="sky"]      { --primary: 200 75% 58%; --ring: 200 75% 58%; }
+  .dark[data-accent="rose"],     .dark [data-accent="rose"]     { --primary: 340 82% 65%; --ring: 340 82% 65%; }
+  .dark[data-accent="lavender"], .dark [data-accent="lavender"] { --primary: 263 75% 68%; --ring: 263 75% 68%; }
+  .dark[data-accent="peach"],    .dark [data-accent="peach"]    { --primary: 25 85% 63%;  --ring: 25 85% 63%;  }
+  .dark[data-accent="sage"],     .dark [data-accent="sage"]     { --primary: 142 45% 55%; --ring: 142 45% 55%; }
+  .dark[data-accent="sky"],      .dark [data-accent="sky"]      { --primary: 200 75% 58%; --ring: 200 75% 58%; }
+  .dark[data-accent="slate"],    .dark [data-accent="slate"]    { --primary: 215 20% 65%; --ring: 215 20% 65%; --primary-foreground: 222 47% 11%; }
+
+  /* ── Accent palettes ──
+     Tailwind's rose-*, pink-*, purple-* and violet-* classes read these, so every pink class in the
+     app follows the user's accent. Generated from Tailwind's default colors. */
+  :root, [data-accent="rose"] {
+    --brand-50: 255 241 245; --brand-100: 255 228 236; --brand-200: 254 205 214; --brand-300: 253 164 184; --brand-400: 251 114 149; --brand-500: 244 63 110; --brand-600: 225 29 74; --brand-700: 190 18 60; --brand-800: 159 18 57; --brand-900: 136 19 55; --brand-950: 76 5 25;
+    --brand2-50: 253 242 248; --brand2-100: 252 231 243; --brand2-200: 251 207 232; --brand2-300: 249 168 212; --brand2-400: 244 114 182; --brand2-500: 236 72 153; --brand2-600: 219 39 119; --brand2-700: 190 24 93; --brand2-800: 157 23 77; --brand2-900: 131 24 67; --brand2-950: 80 7 36;
+    --brand3-50: 250 245 255; --brand3-100: 243 232 255; --brand3-200: 233 213 255; --brand3-300: 216 180 254; --brand3-400: 192 132 252; --brand3-500: 168 85 247; --brand3-600: 147 51 234; --brand3-700: 126 34 206; --brand3-800: 107 33 168; --brand3-900: 88 28 135; --brand3-950: 59 7 100;
+  }
+  [data-accent="lavender"] {
+    --brand-50: 245 243 255; --brand-100: 237 233 254; --brand-200: 221 214 254; --brand-300: 196 181 253; --brand-400: 167 139 250; --brand-500: 139 92 246; --brand-600: 124 58 237; --brand-700: 109 40 217; --brand-800: 91 33 182; --brand-900: 76 29 149; --brand-950: 46 16 101;
+    --brand2-50: 250 245 255; --brand2-100: 243 232 255; --brand2-200: 233 213 255; --brand2-300: 216 180 254; --brand2-400: 192 132 252; --brand2-500: 168 85 247; --brand2-600: 147 51 234; --brand2-700: 126 34 206; --brand2-800: 107 33 168; --brand2-900: 88 28 135; --brand2-950: 59 7 100;
+    --brand3-50: 238 242 255; --brand3-100: 224 231 255; --brand3-200: 199 210 254; --brand3-300: 165 180 252; --brand3-400: 129 140 248; --brand3-500: 99 102 241; --brand3-600: 79 70 229; --brand3-700: 67 56 202; --brand3-800: 55 48 163; --brand3-900: 49 46 129; --brand3-950: 30 27 75;
+  }
+  [data-accent="peach"] {
+    --brand-50: 255 247 237; --brand-100: 255 237 213; --brand-200: 254 215 170; --brand-300: 253 186 116; --brand-400: 251 146 60; --brand-500: 249 115 22; --brand-600: 234 88 12; --brand-700: 194 65 12; --brand-800: 154 52 18; --brand-900: 124 45 18; --brand-950: 67 20 7;
+    --brand2-50: 255 251 235; --brand2-100: 254 243 199; --brand2-200: 253 230 138; --brand2-300: 252 211 77; --brand2-400: 251 191 36; --brand2-500: 245 158 11; --brand2-600: 217 119 6; --brand2-700: 180 83 9; --brand2-800: 146 64 14; --brand2-900: 120 53 15; --brand2-950: 69 26 3;
+    --brand3-50: 254 252 232; --brand3-100: 254 249 195; --brand3-200: 254 240 138; --brand3-300: 253 224 71; --brand3-400: 250 204 21; --brand3-500: 234 179 8; --brand3-600: 202 138 4; --brand3-700: 161 98 7; --brand3-800: 133 77 14; --brand3-900: 113 63 18; --brand3-950: 66 32 6;
+  }
+  [data-accent="sage"] {
+    --brand-50: 236 253 245; --brand-100: 209 250 229; --brand-200: 167 243 208; --brand-300: 110 231 183; --brand-400: 52 211 153; --brand-500: 16 185 129; --brand-600: 5 150 105; --brand-700: 4 120 87; --brand-800: 6 95 70; --brand-900: 6 78 59; --brand-950: 2 44 34;
+    --brand2-50: 240 253 250; --brand2-100: 204 251 241; --brand2-200: 153 246 228; --brand2-300: 94 234 212; --brand2-400: 45 212 191; --brand2-500: 20 184 166; --brand2-600: 13 148 136; --brand2-700: 15 118 110; --brand2-800: 17 94 89; --brand2-900: 19 78 74; --brand2-950: 4 47 46;
+    --brand3-50: 236 254 255; --brand3-100: 207 250 254; --brand3-200: 165 243 252; --brand3-300: 103 232 249; --brand3-400: 34 211 238; --brand3-500: 6 182 212; --brand3-600: 8 145 178; --brand3-700: 14 116 144; --brand3-800: 21 94 117; --brand3-900: 22 78 99; --brand3-950: 8 51 68;
+  }
+  [data-accent="sky"] {
+    --brand-50: 240 249 255; --brand-100: 224 242 254; --brand-200: 186 230 253; --brand-300: 125 211 252; --brand-400: 56 189 248; --brand-500: 14 165 233; --brand-600: 2 132 199; --brand-700: 3 105 161; --brand-800: 7 89 133; --brand-900: 12 74 110; --brand-950: 8 47 73;
+    --brand2-50: 239 246 255; --brand2-100: 219 234 254; --brand2-200: 191 219 254; --brand2-300: 147 197 253; --brand2-400: 96 165 250; --brand2-500: 59 130 246; --brand2-600: 37 99 235; --brand2-700: 29 78 216; --brand2-800: 30 64 175; --brand2-900: 30 58 138; --brand2-950: 23 37 84;
+    --brand3-50: 238 242 255; --brand3-100: 224 231 255; --brand3-200: 199 210 254; --brand3-300: 165 180 252; --brand3-400: 129 140 248; --brand3-500: 99 102 241; --brand3-600: 79 70 229; --brand3-700: 67 56 202; --brand3-800: 55 48 163; --brand3-900: 49 46 129; --brand3-950: 30 27 75;
+  }
+  [data-accent="slate"] {
+    --brand-50: 248 250 252; --brand-100: 241 245 249; --brand-200: 226 232 240; --brand-300: 203 213 225; --brand-400: 148 163 184; --brand-500: 100 116 139; --brand-600: 71 85 105; --brand-700: 51 65 85; --brand-800: 30 41 59; --brand-900: 15 23 42; --brand-950: 2 6 23;
+    --brand2-50: 250 250 250; --brand2-100: 244 244 245; --brand2-200: 228 228 231; --brand2-300: 212 212 216; --brand2-400: 161 161 170; --brand2-500: 113 113 122; --brand2-600: 82 82 91; --brand2-700: 63 63 70; --brand2-800: 39 39 42; --brand2-900: 24 24 27; --brand2-950: 9 9 11;
+    --brand3-50: 249 250 251; --brand3-100: 243 244 246; --brand3-200: 229 231 235; --brand3-300: 209 213 219; --brand3-400: 156 163 175; --brand3-500: 107 114 128; --brand3-600: 75 85 99; --brand3-700: 55 65 81; --brand3-800: 31 41 55; --brand3-900: 17 24 39; --brand3-950: 3 7 18;
+  }
 
   .dark {
     --background: 20 14% 8%;
@@ -210,7 +249,10 @@
 
   /* Gradient backgrounds */
   .bg-gradient-soft {
-    background: var(--gradient-soft);
+    background: linear-gradient(135deg, rgb(var(--brand-50)) 0%, rgb(var(--brand2-50)) 50%, #f0f9ff 100%);
+  }
+  .dark .bg-gradient-soft {
+    background: linear-gradient(135deg, rgb(var(--brand-950) / 0.45) 0%, rgb(var(--brand2-950) / 0.3) 50%, #080d14 100%);
   }
   .bg-gradient-hero {
     background: var(--gradient-hero);

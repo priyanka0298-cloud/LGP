@@ -9,13 +9,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { ACCENT_OPTIONS } from "@/types";
+import { applyAccentAttribute } from "@/lib/accent";
 
 interface OnboardingData {
   display_name: string;
   pronouns: string;
   planning_style: "minimal" | "balanced" | "detailed";
   goals: string[];
-  accent_color: "rose" | "lavender" | "peach" | "sage" | "sky";
+  accent_color: "rose" | "lavender" | "peach" | "sage" | "sky" | "slate";
   challenges: string[];
 }
 
@@ -44,14 +46,6 @@ const LIFE_GOALS = [
   "Less overwhelm", "Better habits", "Work-life balance", "Burnout recovery",
   "Study better", "Track my mood", "ADHD management", "Morning routines",
   "Creative goals", "Health & wellness", "Career growth", "More rest",
-];
-
-const ACCENT_COLORS = [
-  { id: "rose" as const, label: "Rose", class: "bg-rose-400" },
-  { id: "lavender" as const, label: "Lavender", class: "bg-purple-400" },
-  { id: "peach" as const, label: "Peach", class: "bg-orange-300" },
-  { id: "sage" as const, label: "Sage", class: "bg-emerald-400" },
-  { id: "sky" as const, label: "Sky", class: "bg-sky-400" },
 ];
 
 const STEPS = 4;
@@ -196,25 +190,45 @@ export default function OnboardingPage() {
     // Step 3: Accent color
     <motion.div key="color" className="text-center">
       <div className="mx-auto mb-6 text-5xl">🎨</div>
-      <h2 className="font-display text-2xl font-bold mb-2">Pick your vibe</h2>
-      <p className="text-muted-foreground mb-8">Choose your accent color — you can always change it in settings.</p>
-      <div className="flex justify-center gap-4">
-        {ACCENT_COLORS.map((color) => (
+      <h2 className="font-display text-2xl font-bold mb-2">Pick your color</h2>
+      <p className="text-muted-foreground mb-8">This sets the color of your whole app — you can change it anytime in settings.</p>
+      <div className="flex flex-wrap justify-center gap-4 max-w-sm mx-auto">
+        {ACCENT_OPTIONS.map((color) => (
           <button
             key={color.id}
-            onClick={() => setData({ ...data, accent_color: color.id })}
+            onClick={() => {
+              setData({ ...data, accent_color: color.id });
+              applyAccentAttribute(color.id);
+            }}
             className="flex flex-col items-center gap-2 group"
+            aria-pressed={data.accent_color === color.id}
           >
             <div
               className={cn(
                 "h-12 w-12 rounded-full transition-all duration-200 group-hover:scale-110",
-                color.class,
                 data.accent_color === color.id ? "ring-4 ring-primary ring-offset-2 ring-offset-background scale-110" : ""
               )}
+              style={{ backgroundColor: color.swatch }}
             />
             <span className="text-xs font-medium text-muted-foreground">{color.label}</span>
           </button>
         ))}
+      </div>
+
+      {/* Live preview of the chosen color */}
+      <div className="mx-auto mt-8 max-w-xs rounded-2xl border border-border/50 bg-gradient-to-br from-rose-50 to-pink-50 p-4 text-left dark:from-rose-950/30 dark:to-pink-950/20">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-rose-400 to-pink-500">
+            <Sparkles className="h-4 w-4 text-white" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold">Morning walk</p>
+            <p className="text-xs text-muted-foreground">3-day streak 🔥</p>
+          </div>
+          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary">
+            <Check className="h-3 w-3 text-primary-foreground" />
+          </div>
+        </div>
       </div>
 
       {/* Ready message */}

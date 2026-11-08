@@ -20,7 +20,7 @@ export interface Database {
           pronouns: string | null;
           bio: string | null;
           theme: "light" | "dark" | "auto";
-          accent_color: "rose" | "lavender" | "peach" | "sage" | "sky";
+          accent_color: "rose" | "lavender" | "peach" | "sage" | "sky" | "slate";
           planning_style: "minimal" | "balanced" | "detailed";
           onboarding_completed: boolean;
           onboarding_step: number;
@@ -48,7 +48,7 @@ export interface Database {
           pronouns?: string | null;
           bio?: string | null;
           theme?: "light" | "dark" | "auto";
-          accent_color?: "rose" | "lavender" | "peach" | "sage" | "sky";
+          accent_color?: "rose" | "lavender" | "peach" | "sage" | "sky" | "slate";
           planning_style?: "minimal" | "balanced" | "detailed";
           onboarding_completed?: boolean;
           onboarding_step?: number;
@@ -64,7 +64,7 @@ export interface Database {
           pronouns?: string | null;
           bio?: string | null;
           theme?: "light" | "dark" | "auto";
-          accent_color?: "rose" | "lavender" | "peach" | "sage" | "sky";
+          accent_color?: "rose" | "lavender" | "peach" | "sage" | "sky" | "slate";
           planning_style?: "minimal" | "balanced" | "detailed";
           onboarding_completed?: boolean;
           onboarding_step?: number;

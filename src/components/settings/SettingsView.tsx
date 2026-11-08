@@ -20,6 +20,8 @@ import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { cn, formatDate, isPremiumPlan } from "@/lib/utils";
 import type { Profile, Subscription, AccentColor } from "@/types";
+import { ACCENT_OPTIONS } from "@/types";
+import { applyAccentAttribute } from "@/lib/accent";
 
 const profileSchema = z.object({
   full_name: z.string().min(1, "Name is required"),
@@ -30,14 +32,6 @@ const profileSchema = z.object({
 });
 
 type ProfileForm = z.infer<typeof profileSchema>;
-
-const ACCENT_COLORS: Array<{ id: AccentColor; label: string; class: string }> = [
-  { id: "rose", label: "Rose", class: "bg-rose-400" },
-  { id: "lavender", label: "Lavender", class: "bg-purple-400" },
-  { id: "peach", label: "Peach", class: "bg-orange-300" },
-  { id: "sage", label: "Sage", class: "bg-emerald-400" },
-  { id: "sky", label: "Sky", class: "bg-sky-400" },
-];
 
 const THEMES: Array<{ id: "light" | "dark" | "auto"; label: string; emoji: string }> = [
   { id: "light", label: "Light", emoji: "☀️" },
@@ -75,7 +69,7 @@ export function SettingsView({
 
   function applyAccentColor(color: AccentColor) {
     setSelectedColor(color);
-    document.documentElement.setAttribute("data-accent", color);
+    applyAccentAttribute(color);
   }
   const [selectedTheme, setSelectedTheme] = useState<"light" | "dark" | "auto">(profile?.theme ?? "light");
   const [portalLoading, setPortalLoading] = useState(false);
@@ -299,18 +293,21 @@ export function SettingsView({
                   <Separator />
                   <div>
                     <Label className="mb-3 block">Accent color</Label>
-                    <div className="flex gap-3">
-                      {ACCENT_COLORS.map((color) => (
+                    <div className="flex flex-wrap gap-3">
+                      {ACCENT_OPTIONS.map((color) => (
                         <button
                           key={color.id}
                           onClick={() => applyAccentColor(color.id)}
                           className="flex flex-col items-center gap-1.5"
+                          aria-pressed={selectedColor === color.id}
                         >
-                          <div className={cn(
-                            "h-10 w-10 rounded-full transition-all",
-                            color.class,
-                            selectedColor === color.id ? "ring-4 ring-offset-2 ring-offset-background scale-110" : "hover:scale-110"
-                          )} />
+                          <div
+                            className={cn(
+                              "h-10 w-10 rounded-full transition-all",
+                              selectedColor === color.id ? "ring-4 ring-primary ring-offset-2 ring-offset-background scale-110" : "hover:scale-110"
+                            )}
+                            style={{ backgroundColor: color.swatch }}
+                          />
                           <span className="text-xs">{color.label}</span>
                         </button>
                       ))}

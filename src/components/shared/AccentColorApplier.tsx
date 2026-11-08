@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { applyAccentAttribute } from "@/lib/accent";
 
 interface Props {
   accentColor: string;
@@ -11,7 +12,7 @@ export function AccentColorApplier({ accentColor, theme }: Props) {
   const didInit = useRef(false);
 
   useEffect(() => {
-    document.documentElement.setAttribute("data-accent", accentColor);
+    applyAccentAttribute(accentColor);
   }, [accentColor]);
 
   useEffect(() => {

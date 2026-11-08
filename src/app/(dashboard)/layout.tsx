@@ -36,7 +36,7 @@ export default async function DashboardLayout({
     .maybeSingle();
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-screen overflow-hidden bg-background" data-accent={profile?.accent_color ?? "rose"}>
       <AccentColorApplier accentColor={profile?.accent_color ?? "rose"} theme={profile?.theme ?? "light"} />
       {/* Sidebar — desktop only */}
       <div className="hidden md:block">

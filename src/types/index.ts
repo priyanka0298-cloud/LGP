@@ -144,7 +144,7 @@ export const TASK_CATEGORY_CONFIG: Record<TaskCategory, {
 };
 
 const MONTHLY_PRICE = 6.99;
-const YEARLY_PRICE = 79.99;
+const YEARLY_PRICE = 59.99;
 export const YEARLY_SAVINGS_PERCENT = Math.round((1 - YEARLY_PRICE / (MONTHLY_PRICE * 12)) * 100);
 const YEARLY_SAVINGS_DOLLARS = Math.round(MONTHLY_PRICE * 12 - YEARLY_PRICE);
 

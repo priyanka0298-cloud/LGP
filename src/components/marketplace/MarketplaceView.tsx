@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Star, Filter, Search, Sparkles, Lock, CheckCircle2, Wand2, X, ListChecks, Repeat2, ChevronRight, Shuffle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +14,8 @@ import { useRouter } from "next/navigation";
 
 interface MarketplaceViewProps {
   templates: PlannerTemplate[];
-  purchasedIds: Set<string>;
+  appliedIds: Set<string>;
+  ownedIds: Set<string>;
   userId: string | null;
   isPremium: boolean;
 }
@@ -31,15 +32,28 @@ const CATEGORY_EMOJI: Record<string, string> = {
   vision_board: "✨",
 };
 
-export function MarketplaceView({ templates, purchasedIds, userId, isPremium }: MarketplaceViewProps) {
+export function MarketplaceView({ templates, appliedIds, ownedIds, userId, isPremium }: MarketplaceViewProps) {
   const [activeCategory, setActiveCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [applying, setApplying] = useState<string | null>(null);
   const [unapplying, setUnapplying] = useState<string | null>(null);
-  const [applied, setApplied] = useState<Set<string>>(new Set(purchasedIds));
+  const [applied, setApplied] = useState<Set<string>>(new Set(appliedIds));
+  const [buying, setBuying] = useState<string | null>(null);
+  const router = useRouter();
+
+  // Back from Stripe Checkout
+  useEffect(() => {
+    const status = new URLSearchParams(window.location.search).get("purchase");
+    if (status === "success") toast.success("Thanks for your purchase! Your template is unlocked — apply it whenever you're ready 🌸", { duration: 6000 });
+    if (status === "canceled") toast.info("Checkout canceled — no charge was made.");
+    if (status) router.replace("/marketplace");
+  }, [router]);
+
+  // Paid templates need buying unless you're Premium or already own them
+  const needsPurchase = (t: PlannerTemplate) =>
+    t.price_cents > 0 && !isPremium && !ownedIds.has(t.id) && !applied.has(t.id);
   const [preview, setPreview] = useState<PlannerTemplate | null>(null);
   const [showCustomBuilder, setShowCustomBuilder] = useState(false);
-  const router = useRouter();
 
   const filtered = templates.filter((t) => {
     const matchesCategory = activeCategory === "All" || t.category === activeCategory;
@@ -58,21 +72,25 @@ export function MarketplaceView({ templates, purchasedIds, userId, isPremium }: 
       return;
     }
 
-    if (template.price_cents > 0 && !applied.has(template.id)) {
-      const stripeReady = !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY &&
-        !process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.startsWith("pk_test_your-");
-      if (!stripeReady) {
-        toast.info("Paid templates coming soon — check back after launch! 🌸");
-        return;
+    if (needsPurchase(template)) {
+      setBuying(template.id);
+      try {
+        const res = await fetch("/api/stripe/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ templateId: template.id }),
+        });
+        const { url, error } = await res.json();
+        if (error || !url) {
+          toast.error(error ?? "Couldn't start checkout. Try again 🌸");
+          setBuying(null);
+          return;
+        }
+        window.location.href = url;
+      } catch {
+        toast.error("Couldn't start checkout. Try again 🌸");
+        setBuying(null);
       }
-      const res = await fetch("/api/stripe/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ priceId: template.stripe_price_id }),
-      });
-      const { url, error } = await res.json();
-      if (error) { toast.error(error); return; }
-      if (url) window.location.href = url;
       return;
     }
 
@@ -343,11 +361,24 @@ export function MarketplaceView({ templates, purchasedIds, userId, isPremium }: 
                   <Sparkles className="h-4 w-4" />
                   Sign up free to apply this template
                 </Button>
-              ) : preview.price_cents > 0 ? (
-                <Button variant="gradient" className="w-full gap-2" onClick={() => handleApply(preview)}>
-                  <Lock className="h-4 w-4" />
-                  Buy for {formatCurrency(preview.price_cents)}
-                </Button>
+              ) : needsPurchase(preview) ? (
+                <div className="space-y-2">
+                  <Button
+                    variant="gradient"
+                    className="w-full gap-2"
+                    onClick={() => handleApply(preview)}
+                    disabled={buying === preview.id}
+                  >
+                    <Lock className="h-4 w-4" />
+                    {buying === preview.id ? "Opening checkout..." : `Buy for ${formatCurrency(preview.price_cents)}`}
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    One-time purchase · or{" "}
+                    <a href="/pricing" className="text-primary underline-offset-2 hover:underline">
+                      get every template with Premium
+                    </a>
+                  </p>
+                </div>
               ) : (
                 <>
                   <p className="text-xs text-muted-foreground text-center mb-3">

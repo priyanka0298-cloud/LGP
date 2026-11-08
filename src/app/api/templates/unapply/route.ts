@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { TEMPLATE_CONFIGS } from "@/lib/template-configs";
 
 export async function POST(request: Request) {
@@ -57,12 +57,21 @@ export async function POST(request: Request) {
     tasksRemoved = deleted?.length ?? 0;
   }
 
-  // Remove purchase record so it shows as unapplied
-  await supabase
+  // Mark as unapplied (read-only to users, so use the service role).
+  // Paid purchases are kept so the user can re-apply without paying again.
+  const admin = await createServiceClient();
+  const { data: record } = await admin
     .from("template_purchases")
-    .delete()
+    .select("id, amount_cents")
     .eq("user_id", user.id)
-    .eq("template_id", templateId);
+    .eq("template_id", templateId)
+    .maybeSingle();
+
+  if (record && (record.amount_cents ?? 0) > 0) {
+    await admin.from("template_purchases").update({ applied: false }).eq("id", record.id);
+  } else if (record) {
+    await admin.from("template_purchases").delete().eq("id", record.id);
+  }
 
   return NextResponse.json({
     habitsRemoved,

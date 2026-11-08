@@ -7,12 +7,13 @@ export const metadata = { title: "Template Marketplace" };
 export default async function MarketplacePage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const { templates, purchasedIds, isPremium } = await loadMarketplaceData(supabase, user?.id ?? null);
+  const { templates, appliedIds, ownedIds, isPremium } = await loadMarketplaceData(supabase, user?.id ?? null);
 
   return (
     <MarketplaceView
       templates={templates}
-      purchasedIds={purchasedIds}
+      appliedIds={appliedIds}
+      ownedIds={ownedIds}
       userId={user?.id ?? null}
       isPremium={isPremium}
     />

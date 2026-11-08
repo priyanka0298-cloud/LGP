@@ -30,13 +30,18 @@ export default function PricingPage() {
       const { url, error } = await res.json();
       if (error) {
         if (res.status === 401) {
-          toast.error("You need to be signed in to upgrade.");
+          window.location.href = "/login?redirect=/pricing";
+          return;
         } else {
           toast.error(error);
         }
+        setLoading(null);
         return;
       }
-      if (url) window.location.href = url;
+      if (url) {
+        window.location.href = url;
+        return; // keep the button in its loading state while Stripe opens
+      }
     } catch {
       toast.error("Something went wrong. Try again?");
     }

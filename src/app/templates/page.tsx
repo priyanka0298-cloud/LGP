@@ -15,13 +15,13 @@ export default async function TemplatesPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (user) redirect("/marketplace");
 
-  const { templates, purchasedIds, isPremium } = await loadMarketplaceData(supabase, null);
+  const { templates, appliedIds, ownedIds, isPremium } = await loadMarketplaceData(supabase, null);
 
   return (
     <>
       <LandingNav />
       <main className="mx-auto max-w-6xl px-4 pb-16 pt-28 sm:px-6">
-        <MarketplaceView templates={templates} purchasedIds={purchasedIds} userId={null} isPremium={isPremium} />
+        <MarketplaceView templates={templates} appliedIds={appliedIds} ownedIds={ownedIds} userId={null} isPremium={isPremium} />
       </main>
       <LandingFooter />
     </>

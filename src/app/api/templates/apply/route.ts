@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { TEMPLATE_CONFIGS } from "@/lib/template-configs";
 import type { TemplateConfig } from "@/types";
 import { format, addDays } from "date-fns";
@@ -33,18 +33,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Template not available" }, { status: 403 });
   }
 
-  // For paid templates, verify purchase exists
-  if (template.price_cents > 0) {
-    const { data: purchase } = await supabase
+  const [{ data: subscription }, { data: existing }] = await Promise.all([
+    supabase.from("subscriptions").select("plan").eq("user_id", user.id).maybeSingle(),
+    supabase
       .from("template_purchases")
-      .select("id")
-      .eq("template_id", templateId)
+      .select("id, amount_cents")
       .eq("user_id", user.id)
-      .maybeSingle();
+      .eq("template_id", templateId)
+      .maybeSingle(),
+  ]);
+  const isPremium = isPremiumPlan(subscription?.plan);
 
-    if (!purchase) {
-      return NextResponse.json({ error: "Purchase required" }, { status: 403 });
-    }
+  // Paid templates: Premium includes them all, otherwise the user must have bought it
+  const purchased = (existing?.amount_cents ?? 0) > 0;
+  if (template.price_cents > 0 && !isPremium && !purchased) {
+    return NextResponse.json({ error: "Purchase required" }, { status: 403 });
   }
 
   // Look up config — from file (works immediately, no DB migration needed)
@@ -59,15 +62,14 @@ export async function POST(request: Request) {
 
   // Create habits — skip any that already exist by name for this user
   if (config.habits?.length) {
-    const [{ data: existingHabits }, { data: subscription }] = await Promise.all([
-      supabase.from("habits").select("name, is_active").eq("user_id", user.id),
-      supabase.from("subscriptions").select("plan").eq("user_id", user.id).maybeSingle(),
-    ]);
+    const { data: existingHabits } = await supabase
+      .from("habits")
+      .select("name, is_active")
+      .eq("user_id", user.id);
 
     const existingNames = new Set((existingHabits ?? []).map((h) => h.name.toLowerCase()));
 
     // Free plan holds 5 active habits — cap what a template can add
-    const isPremium = isPremiumPlan(subscription?.plan);
     const activeCount = (existingHabits ?? []).filter((h) => h.is_active).length;
     const remainingSlots = isPremium ? config.habits.length : Math.max(0, 5 - activeCount);
 
@@ -117,25 +119,23 @@ export async function POST(request: Request) {
     if (!error) tasksCreated = newTasks.length;
   }
 
-  // Record this application so the button shows "Applied" next time
-  // Check first to avoid duplicate inserts (no unique constraint needed)
-  const { data: existing } = await supabase
-    .from("template_purchases")
-    .select("id")
-    .eq("user_id", user.id)
-    .eq("template_id", templateId)
-    .maybeSingle();
+  // Record this application so the button shows "Applied" next time.
+  // template_purchases and planner_templates are read-only to users, so write with the service role
+  const admin = await createServiceClient();
 
-  if (!existing) {
-    await supabase.from("template_purchases").insert({
+  if (existing) {
+    await admin.from("template_purchases").update({ applied: true }).eq("id", existing.id);
+  } else {
+    await admin.from("template_purchases").insert({
       user_id: user.id,
       template_id: templateId,
       amount_cents: 0,
+      applied: true,
     });
   }
 
   // Bump download count
-  await supabase
+  await admin
     .from("planner_templates")
     .update({ download_count: template.download_count + 1 })
     .eq("id", templateId);

@@ -603,6 +603,7 @@ export interface Database {
           template_id: string;
           stripe_payment_intent_id: string | null;
           amount_cents: number | null;
+          applied: boolean;
           created_at: string;
         };
         Insert: {
@@ -610,10 +611,12 @@ export interface Database {
           template_id: string;
           stripe_payment_intent_id?: string | null;
           amount_cents?: number | null;
+          applied?: boolean;
         };
         Update: {
           stripe_payment_intent_id?: string | null;
           amount_cents?: number | null;
+          applied?: boolean;
         };
         Relationships: [];
       };

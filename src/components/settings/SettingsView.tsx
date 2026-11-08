@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -75,6 +76,18 @@ export function SettingsView({
   const [portalLoading, setPortalLoading] = useState(false);
   const { setTheme } = useTheme();
   const supabase = createClient();
+  const router = useRouter();
+
+  // Back from Stripe Checkout — the webhook can land a moment after the redirect, so refresh shortly after
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("upgrade") !== "success") return;
+    setActiveSection("subscription");
+    toast.success("Welcome to Premium! ✨ Your plan is being activated.", { duration: 6000 });
+    router.replace("/settings");
+    const t1 = setTimeout(() => router.refresh(), 2500);
+    const t2 = setTimeout(() => router.refresh(), 7000);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [router]);
 
   function applyTheme(t: "light" | "dark" | "auto") {
     setSelectedTheme(t);

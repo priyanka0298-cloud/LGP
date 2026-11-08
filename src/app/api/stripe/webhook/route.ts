@@ -28,6 +28,34 @@ export async function POST(request: Request) {
   const supabase = await createServiceClient();
 
   switch (event.type) {
+    case "checkout.session.completed": {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const userId = session.metadata?.supabase_user_id;
+      const templateId = session.metadata?.template_id;
+
+      // One-time template purchase — record it so the template unlocks
+      if (session.mode === "payment" && session.payment_status === "paid" && userId && templateId) {
+        const { data: existing } = await supabase
+          .from("template_purchases")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("template_id", templateId)
+          .maybeSingle();
+
+        if (!existing) {
+          await supabase.from("template_purchases").insert({
+            user_id: userId,
+            template_id: templateId,
+            stripe_payment_intent_id:
+              typeof session.payment_intent === "string" ? session.payment_intent : null,
+            amount_cents: session.amount_total,
+            applied: false,
+          });
+        }
+      }
+      break;
+    }
+
     case "customer.subscription.created":
     case "customer.subscription.updated": {
       const subscription = event.data.object as Stripe.Subscription;

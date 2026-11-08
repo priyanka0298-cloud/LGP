@@ -46,20 +46,11 @@ export const metadata: Metadata = {
     title: "Softlivi — Live Softly. Plan Gently.",
     description:
       "Gentle planning, habit tracking, and AI-powered wellness for ambitious women who are done with hustle culture.",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "Softlivi",
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Softlivi",
     description: "Plan softly. Live fully.",
-    images: ["/og-image.png"],
   },
   manifest: "/manifest.json",
   appleWebApp: {

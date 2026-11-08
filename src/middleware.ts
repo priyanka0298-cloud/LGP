@@ -1,7 +1,7 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_ROUTES = ["/", "/pricing", "/login", "/signup", "/auth/callback", "/reset-password", "/privacy", "/terms", "/contact", "/marketplace"];
+const PUBLIC_ROUTES = ["/", "/pricing", "/login", "/signup", "/auth/callback", "/reset-password", "/privacy", "/terms", "/contact", "/api/contact", "/marketplace"];
 const AUTH_ROUTES = ["/login", "/signup"];
 
 // Pre-launch gate: production shows /coming-soon to everyone except ADMIN_EMAILS

@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { Check, Sparkles, ArrowLeft, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { PRICING_PLANS } from "@/types";
+import { PRICING_PLANS, YEARLY_SAVINGS_PERCENT } from "@/types";
 import { formatCurrency, cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -102,7 +102,7 @@ export default function PricingPage() {
               )}
             >
               Yearly
-              <Badge variant="sage" className="text-[10px] py-0">Save 33%</Badge>
+              <Badge variant="sage" className="text-[10px] py-0">Save {YEARLY_SAVINGS_PERCENT}%</Badge>
             </button>
           </div>
         </motion.div>

@@ -143,6 +143,11 @@ export const TASK_CATEGORY_CONFIG: Record<TaskCategory, {
   },
 };
 
+const MONTHLY_PRICE = 6.99;
+const YEARLY_PRICE = 79.99;
+export const YEARLY_SAVINGS_PERCENT = Math.round((1 - YEARLY_PRICE / (MONTHLY_PRICE * 12)) * 100);
+const YEARLY_SAVINGS_DOLLARS = Math.round(MONTHLY_PRICE * 12 - YEARLY_PRICE);
+
 export const PRICING_PLANS = [
   {
     id: "free",
@@ -165,7 +170,7 @@ export const PRICING_PLANS = [
   {
     id: "premium_monthly",
     name: "Premium",
-    price: 9.99,
+    price: MONTHLY_PRICE,
     period: "month",
     description: "Your complete planning sanctuary",
     features: [
@@ -189,12 +194,12 @@ export const PRICING_PLANS = [
   {
     id: "premium_yearly",
     name: "Premium Annual",
-    price: 79.99,
+    price: YEARLY_PRICE,
     period: "year",
     description: "Best value for committed planners",
     features: [
       "Everything in Premium Monthly",
-      "Save $40 vs monthly (33% off)",
+      `Save $${YEARLY_SAVINGS_DOLLARS} vs monthly (${YEARLY_SAVINGS_PERCENT}% off)`,
       "7-day free trial included",
       "Early access to new features",
       "Soft life challenges with the community (coming soon)",

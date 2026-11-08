@@ -47,7 +47,7 @@ export function LandingNav() {
           {[
             { label: "Features", href: "/#features" },
             { label: "Pricing", href: "/pricing" },
-            { label: "Templates", href: "/marketplace" },
+            { label: "Templates", href: "/templates" },
           ].map((item) => (
             <Link
               key={item.label}
@@ -90,7 +90,7 @@ export function LandingNav() {
             {[
               { label: "Features", href: "/#features" },
               { label: "Pricing", href: "/pricing" },
-              { label: "Templates", href: "/marketplace" },
+              { label: "Templates", href: "/templates" },
             ].map((item) => (
               <Link
                 key={item.label}

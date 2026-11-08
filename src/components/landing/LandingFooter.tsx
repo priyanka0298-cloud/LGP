@@ -6,7 +6,7 @@ const LINKS: Record<string, { label: string; href: string }[]> = {
   Product: [
     { label: "Features", href: "/#features" },
     { label: "Pricing", href: "/pricing" },
-    { label: "Templates", href: "/marketplace" },
+    { label: "Templates", href: "/templates" },
   ],
   Support: [
     { label: "Sign Up", href: "/signup" },

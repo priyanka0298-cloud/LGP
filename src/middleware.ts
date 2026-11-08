@@ -1,7 +1,7 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_ROUTES = ["/", "/pricing", "/login", "/signup", "/auth/callback", "/reset-password", "/privacy", "/terms", "/contact", "/api/contact", "/marketplace"];
+const PUBLIC_ROUTES = ["/", "/pricing", "/login", "/signup", "/auth/callback", "/reset-password", "/privacy", "/terms", "/contact", "/api/contact", "/templates"];
 const AUTH_ROUTES = ["/login", "/signup"];
 
 // Pre-launch gate: production shows /coming-soon to everyone except ADMIN_EMAILS
@@ -64,6 +64,10 @@ export async function middleware(request: NextRequest) {
   // Redirect authenticated users away from auth pages
   if (user && isAuthRoute) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
+  if (!user && pathname === "/marketplace") {
+    return NextResponse.redirect(new URL("/templates", request.url));
   }
 
   // Redirect unauthenticated users to login for protected routes

@@ -138,7 +138,7 @@ export function MarketplaceView({ templates, purchasedIds, userId, isPremium }: 
 
       {/* Build Your Own Bundle */}
       <button
-        onClick={() => setShowCustomBuilder(true)}
+        onClick={() => (userId ? setShowCustomBuilder(true) : (window.location.href = "/signup"))}
         className="w-full rounded-2xl border border-dashed border-primary/40 bg-gradient-to-r from-rose-50/60 to-purple-50/60 dark:from-rose-950/20 dark:to-purple-950/20 p-4 flex items-center gap-4 hover:border-primary/60 hover:shadow-sm transition-all text-left group"
       >
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-400 to-purple-500 shadow-sm">
